@@ -196,43 +196,72 @@ class TabbedBrowserWindow {
   getFocusedTab() {
     return this.tabs.selected
   }
-  
+
   generatePac(host, port) {
-    const ips = [
-      '*.kancolle-server.com',
-      '203.104.209.71',
-      '203.104.209.87',
-      '125.6.184.215',
-      '203.104.209.183',
-      '203.104.209.150',
-      '203.104.209.134',
-      '203.104.209.167',
-      '203.104.209.199',
-      '125.6.189.7',
-      '125.6.189.39',
-      '125.6.189.71',
-      '125.6.189.103',
-      '125.6.189.135',
-      '125.6.189.167',
-      '125.6.189.215',
-      '125.6.189.247',
-      '203.104.209.23',
-      '203.104.209.39',
-      '203.104.209.55',
-      '203.104.209.102'
-    ];
-    const gadget = 'w00g.kancolle-server.com';
-    //const gadget = '203.104.209.7';
-
-    const ipsExp = ips.join('|');
-    const pac = 'function FindProxyForURL(url, host) {\n'
-    + `  if (shExpMatch(url, "http://(${ipsExp})/(kcs|kcs2)/*") || host == "${gadget}")\n`
-    + `    return "PROXY ${host}:${port}";\n`
-    + '  return "DIRECT";\n'
-    + '}\n';
-
-    return pac;
-  };
+    const pacScript = `var proxy_host=[
+    "203.104.209.7",
+    "203.104.209.71",
+    "203.104.209.87",
+    "125.6.184.215",
+    "203.104.209.183",
+    "203.104.209.150",
+    "203.104.209.134",
+    "203.104.209.167",
+    "203.104.209.199",
+    "125.6.189.7",
+    "125.6.189.39",
+    "125.6.189.71",
+    "125.6.189.103",
+    "125.6.189.135",
+    "125.6.189.167",
+    "125.6.189.215",
+    "125.6.189.247",
+    "203.104.209.23",
+    "203.104.209.39",
+    "wikiwiki.jp",
+    "g.doubleclick.net",
+    "simg.jp",
+    "ggpht.com",
+    "dmm.com",
+    "www.dmm.co.jp",
+    "my.dmm.co.jp",
+    "osapi.dmm.co.jp",
+    "sp.dmm.co.jp",
+    "point.dmm.co.jp",
+    "dlcp2.dmm.co.jp",
+    "book.dmm.co.jp",
+    "dlsoft.dmm.co.jp",
+    "s3-ap-northeast-1.amazonaws.com",
+    "203.104.209.55",
+    "203.104.209.102",
+    "dugrqaqinbtcq.cloudfront.net",
+    "assets.shiropro-re.net",
+    "api.shiropro-re.net",
+    "kamihimeproject.net",
+    "mbga.jp",
+    "rcv.ixd.dmm.co.jp",
+    "pc-play.games.dmm.co.jp",
+    "pics.dmm.co.jp",
+    "p.dmm.co.jp",
+    "games.dmm.co.jp",
+    "personal.games.dmm.co.jp",
+    "avatar.games.dmm.co.jp",
+    "yashiro.dmmgames.com",
+    "accounts.dmm.co.jp"
+  ];
+  function FindProxyForURL(url, host) {
+    try{ 
+    for(var i=0;i<proxy_host.length;i++){
+      var ph=proxy_host[i];
+      if(ph===host||new RegExp("\\."+ph + "$").test(host)){
+        return "PROXY ${host}:${port}";
+      }
+    }
+    }catch(e){}
+    return "DIRECT";
+  }`
+    return pacScript;
+  }
 
   async applyProxy() {
     const enable = config.get('proxy.client.enable')
