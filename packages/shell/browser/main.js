@@ -54,7 +54,7 @@ app.commandLine.appendSwitch("force-gpu-mem-available-mb", "10000")
 app.commandLine.appendSwitch("force-gpu-rasterization")
 app.commandLine.appendSwitch("enable-native-gpu-memory-buffers")
 app.commandLine.appendSwitch("enable-gpu-memory-buffer-compositor-resources")
-
+app.commandLine.appendSwitch("enable-experimental-web-platform-features");
 
 if (process.execPath.match(/(damecon(-browser)?|chrome)/)) {
   currPath = path.dirname(process.execPath)

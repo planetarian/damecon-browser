@@ -99,7 +99,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
       },
     })
     appendSeparator()
-  } else if (params.mediaType !== 'none' && params.mediaType !== 'canvas') {
+  } else if (params.mediaType !== 'none' && params.mediaType !== 'canvas' && params.mediaType !== 'image') {
     // TODO: Loop, Show controls
     append({
       label: labels.openInNewTab(params.mediaType),
@@ -114,9 +114,36 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
       },
     })
     appendSeparator()
+  } else if (params.mediaType === 'image') {
+    append({
+      label: labels.openInNewTab(params.mediaType),
+      click: () => {
+        openLink(params.srcURL, 'default', params)
+      },
+    })
+    append({
+      label: labels.copyAddress(params.mediaType),
+      click: () => {
+        clipboard.writeText(params.srcURL)
+      },
+    })
+    appendSeparator()
+    append({
+      label: 'Copy image',
+      click: () => {
+        webContents.copyImageAt(params.x, params.y)
+      }}
+    )
+    append({
+      label: 'Save image',
+      click: () => {
+        webContents.downloadURL(params.srcURL)
+      }}
+    )
+    appendSeparator()
   } else if (params.mediaType === 'canvas') {
     append({
-      label: 'Copy Image',
+      label: 'Copy image',
       click: () => {
         const copy = `function takeScreenshot() {
     let canvas = document.querySelector('#unity-canvas') // Unity canvas
@@ -136,7 +163,7 @@ takeScreenshot()`
       },
     })
     append({
-      label: 'Save Image',
+      label: 'Save image',
       click: () => {
         const save = `function saveImage() {
     let canvas = document.querySelector('#unity-canvas') // Unity canvas
