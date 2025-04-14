@@ -1,2 +1,2 @@
-const Browser = require('./browser/main')
+import Browser from './browser/main'
 new Browser()

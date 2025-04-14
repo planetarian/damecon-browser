@@ -1,5 +1,5 @@
-const { EventEmitter } = require('events')
-const { Tab } = require('./tab.js')
+import { EventEmitter } from 'events'
+import Tab from './tab.js'
 
 class Tabs extends EventEmitter {
   tabList = []
@@ -130,4 +130,4 @@ class Tabs extends EventEmitter {
   }
 }
 
-exports.Tabs = Tabs
+export default Tabs

@@ -1,11 +1,11 @@
-const path = require('node:path')
-const fs = require('fs')
+import path from 'node:path'
+import fs from 'fs'
 const fsAsync = fs.promises
-const { Readable } = require('stream')
-const { finished } = require('stream/promises')
-const AdmZip = require('adm-zip')
-const git = require('isomorphic-git')
-const http = require('isomorphic-git/http/node')
+import { Readable } from 'stream'
+import { finished } from 'stream/promises'
+import AdmZip from 'adm-zip'
+import git from 'isomorphic-git'
+import http from 'isomorphic-git/http/node'
 
 let self
 
@@ -237,4 +237,4 @@ class KC3Updater {
   }
 }
 
-module.exports = { KC3Updater }
+export default KC3Updater
