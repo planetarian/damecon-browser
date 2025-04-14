@@ -1,8 +1,12 @@
+const path = require('path')
+const fs = require('fs/promises')
+
 module.exports = {
   packagerConfig: {
-    name: 'Shell',
+    name: 'damecon-browser',
     asar: true,
     extraResource: ['browser/ui'],
+    icon: 'icon',
   },
   rebuildConfig: {},
   makers: [
@@ -39,4 +43,26 @@ module.exports = {
       },
     },
   ].filter(Boolean),
+  hooks: {
+    postPackage: async (config, options) => {
+      try {
+        var src = path.join(__dirname, '../../extensions')
+        var dst = path.join(options.outputPaths[0], 'extensions')
+        try {
+          await fs.mkdir(dst)
+        } catch {}
+        const directories = (await fs.readdir(src, { withFileTypes: true }))
+          .filter((d) => d.isDirectory())
+          .map((d) => d.name)
+        for (const dir of directories) {
+          var regex = /^(?!kc3kai).*$/
+          if (regex.test(dir)) {
+            await fs.cp(path.join(src, dir), path.join(dst, dir), { recursive: true })
+          }
+        }
+      } catch (error) {
+        console.log('Error copying extensions', error)
+      }
+    },
+  },
 }

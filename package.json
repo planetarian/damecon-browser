@@ -33,7 +33,8 @@
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
-    "prettier": "^3.4.1"
+    "prettier": "^3.4.1",
+    "electron": "35.0.0-beta.12"
   },
   "repository": "git@github.com:samuelmaddock/electron-browser-shell.git",
   "engines": {

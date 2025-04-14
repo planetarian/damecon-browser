@@ -1,0 +1,67 @@
+#root {
+  background-color: var(--content-bg-color);
+  color: var(--content-text-color);
+  padding: 30px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+}
+
+.header .icon {
+  width: 48px;
+  height: 48px;
+  background-image: url('assets/icons/damecon_icon_48.png');
+  margin-bottom: 30px;
+}
+
+.header .title {
+  margin-left: 10px;
+}
+
+.header .title h2 {
+  margin: 0;
+  padding: 0;
+  font-size: 2rem;
+  line-height: 1.3;
+}
+
+.links {
+  display: flex;
+  flex-direction: row;
+  width: 800px;
+}
+
+.col {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.col > div {
+  background-color: var(--content-fg-color);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  padding: 10px;
+}
+
+.col h6 {
+  margin: 0;
+}
+
+.col ul {
+  margin-top: 8px;
+  margin-left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

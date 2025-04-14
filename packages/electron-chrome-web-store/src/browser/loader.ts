@@ -123,6 +123,7 @@ export async function loadAllExtensions(
   extensionsPath: string,
   options: {
     allowUnpacked?: boolean
+    filterRegex?: RegExp
   } = {},
 ) {
   let extensions = await discoverExtensions(extensionsPath)
@@ -132,6 +133,13 @@ export async function loadAllExtensions(
   for (const ext of extensions) {
     try {
       let extension: Electron.Extension | undefined
+      if (options.filterRegex) {
+        const extRelPath = ext.path.substring(extensionsPath.length + 1)
+        if (!options.filterRegex.test(extRelPath)) {
+          d('skipping loading extension by regex filter %s', extRelPath)
+          continue
+        }
+      }
       if (ext.type === 'store') {
         const existingExt = session.getExtension(ext.id)
         if (existingExt) {
