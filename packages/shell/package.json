@@ -1,8 +1,8 @@
 {
-  "name": "shell",
-  "productName": "Shell",
-  "version": "2.2.0",
-  "description": "Minimum Viable Browser shell built on Electron.",
+  "name": "damecon-browser",
+  "productName": "Damecon",
+  "version": "0.3.0",
+  "description": "A minimal browser designed for playing Kantai Collection via KC3Kai.",
   "main": ".webpack/main",
   "scripts": {
     "build": "npm run package",
@@ -12,13 +12,17 @@
     "make": "electron-forge make"
   },
   "license": "MIT",
-  "author": "Samuel Maddock <sam@samuelmaddock.com>",
+  "author": "Chami <planetarian@users.noreply.github.com>",
   "private": true,
   "dependencies": {
+    "adm-zip": "^0.5.15",
+    "configstore": "3.1.5",
     "electron-chrome-context-menu": "^1.1.0",
     "electron-chrome-extensions": "^4.6.0",
-    "electron-chrome-web-store": "^0.10.0",
-    "electron-squirrel-startup": "^1.0.0"
+    "electron-chrome-web-store": "^0.11.0",
+    "electron-progressbar": "^2.2.1",
+    "electron-squirrel-startup": "^1.0.0",
+    "isomorphic-git": "^1.27.1"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.5.0",

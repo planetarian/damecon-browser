@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Damecon settings</title>
+  <meta charset="utf-8">
+
+  <script type="text/javascript" src="assets/js/jquery-3.3.1.min.js"></script>
+  <script type="text/javascript" src="assets/js/popper.min.js"></script>
+  <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="assets/js/fontawesome.js"></script>
+
+  <script type="text/javascript" src="assets/js/knockout-3.5.1.js"></script>
+  <script type="text/javascript" src="assets/js/knockout-i18n.js"></script>
+
+  <script type="text/javascript" src="common.js"></script>
+  <script type="text/javascript" src="settings.js"></script>
+
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="webui.css" />
+  <link rel="stylesheet" href="settings.css" />
+
+  <link rel="icon" href="assets/icons/damecon_icon_48.png" />
+</head>
+
+<body>
+  <div id="root">
+    <div id="settings">
+      <div id="settings-menu">
+        <div class="menu-header">
+          <!--<h5>Damecon</h5>-->
+        </div>
+        <div class="menu-items">
+          <!-- ko foreach: self.configPages -->
+          <div class="menu-item"
+            data-bind="attr: { 'data-active': self.selectedConfigPage() === $data.id }, click: self.selectConfigPage">
+            <span class="icon">
+              <!-- ko if: $data.img-->
+              <img data-bind="attr: { src: img }">
+              <!-- /ko -->
+              <!-- ko if: $data.faIcon -->
+              <i data-bind="attr: { class: faIcon }"></i>
+              <!-- /ko -->
+            </span>
+            <span class="header" data-bind="text: name"></span>
+          </div>
+          <!-- /ko -->
+        </div>
+      </div>
+      <div id="settings-container">
+        <div class="settings-content">
+          <div class="settings">
+            <!-- ko template: { name: 'settings-content-' + self.selectedConfigPage() } -->
+            <!-- /ko -->
+          </div>
+        </div>
+        <div id="background-processes">
+          <!-- ko foreach: processes -->
+          <div class="process">
+            <div class="process-name" data-bind="text: name"></div>
+            <!-- ko if: !!$data.phase() || $data.total() > 0 -->
+            <div class="process-text">
+              <div class="process-phase" data-bind="text: phase"></div>
+              <div class="process-progress" data-bind="text: progress"></div>
+            </div>
+              <!-- /ko -->
+            <!-- ko if: $data.total() > 0 -->
+            <div class="progress">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" data-bind="style: { width: progressPct() + '%'}"></div>
+            </div>
+            <!-- /ko -->
+            <!-- ko if: $data.total() === 0 -->
+            <div class="progress">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <!-- /ko -->
+          </div>
+          <!-- /ko -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="settings-content-templates">
+    <script type="text/html" id="settings-content-0">
+      <h3>Damecon Settings</h3>
+      <div class="settings-group">
+        <div class="form-group">
+          <label for="windowstyletheme">Theme</label>
+          <select id="windowstyletheme" class="form-control" data-bind="options: windowStyleThemes, value: windowStyleTheme"></select>
+        </div>
+        <div class="form-group">
+          <label for="windowstylebright">Brightness</label>
+          <select id="windowstylebright" class="form-control" data-bind="options: windowStyleBrightnesses, value: windowStyleBrightness"></select>
+        </div>
+      </div>
+    </script>
+    <script type="text/html" id="settings-content-1">
+      <h3>KC3Kai Settings</h3>
+      <div class="settings-group">
+        <div class="form-check">
+          <input class="form-check-input" id="kc3openstartpage" type="checkbox" data-bind="checked: kc3OpenStartPage"></input>
+          <label class="form-check-label" for="kc3openstartpage">Auto-open start page</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="kc3opendmmpage" type="checkbox" data-bind="checked: kc3OpenDMMPage"></input>
+          <label class="form-check-label" for="kc3opendmmpage">Auto-open KanColle</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: kc3OpenDevtools"></input>
+          <label class="form-check-label" for="kc3opendevtools">Auto-open devtools</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="kc3openstratroom" type="checkbox" data-bind="checked: kc3OpenStratRoom"></input>
+          <label class="form-check-label" for="kc3openstratroom">Auto-open strategy room</label>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="form-group">
+          <label for="kc3updatechannel">Update channel</label>
+          <select id="kc3updatechannel" class="form-control" data-bind="options: kc3UpdateChannels, value: kc3UpdateChannel, enable: canSetKc3Channel"></select>
+        </div>
+        <!-- ko if: !kc3UpdateChannel()?.startsWith('custom') -->
+        <div class="form-group">
+          <label for="kc3updateschedule">Update schedule</label>
+          <select id="kc3updateschedule" class="form-control" data-bind="options: kc3UpdateSchedules, value: kc3UpdateSchedule"></select>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: kc3UpdateAuto"></input>
+          <label class="form-check-label" for="kc3updatesauto">Download/apply updates automatically</label>
+        </div>
+        <!-- /ko -->
+        <!-- ko if: kc3UpdateChannel() === 'custom1' -->
+        <div class="form-group">
+          <label for="kc3custom1location">Location</label>
+          <div class="input-group">
+            <input type="text" id="kc3custom1location" class="form-control" data-bind="value: kc3Custom1Location"/>
+            <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+          </div>
+        </div>
+        <!-- /ko -->
+        <!-- ko if: kc3UpdateChannel() === 'custom2' -->
+        <div class="form-group">
+          <label for="kc3custom2location">Location</label>
+          <div class="input-group">
+            <input type="text" id="kc3custom2location" class="form-control" data-bind="value: kc3Custom2Location"/>
+            <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+          </div>
+        </div>
+        <!-- /ko -->
+      </div>
+      <div class="form-group">
+        <p>Note: reloading will automatically close any currently-open KC3 tabs.</p>
+        <!-- ko if: !kc3UpdateChannel()?.startsWith('custom') -->
+        <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Check for updates & reload</button>
+        <!-- /ko -->
+        <!-- ko if: kc3UpdateChannel()?.startsWith('custom') -->
+        <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Reload</button>
+        <!-- /ko -->
+      </div>
+    </script>
+    <script type="text/html" id="settings-content-2">
+      <h3>Proxy Settings</h3>
+      <div class="settings-group">
+        <div class="form-group">
+          <label for="proxyclienthost">Host</label>
+          <input id="proxyclienthost" type="text" class="form-control" data-bind="value: proxyClientHost" placeholder="Enter IP/host (e.g. 127.0.0.1)">
+        </div>
+        <div class="form-group">
+          <label for="proxyclientport">Port</label>
+          <input id="proxyclientport" type="number" class="form-control" data-bind="value: proxyClientPort" placeholder="Enter port (e.g. 8081)">
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="proxyclientenable" type="checkbox" data-bind="checked: proxyClientEnable"></input>
+          <label class="form-check-label" for="proxyclientenable">Enabled</label>
+        </div>
+      </div>
+    </script>
+  </div>
+</body>
+
+</html>

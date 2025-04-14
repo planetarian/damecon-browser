@@ -1,92 +1,22 @@
 const { EventEmitter } = require('events')
-const { WebContentsView } = require('electron')
-
-const toolbarHeight = 64
-
-class Tab {
-  constructor(parentWindow, webContentsViewOptions = {}) {
-    this.invalidateLayout = this.invalidateLayout.bind(this)
-
-    this.view = new WebContentsView(webContentsViewOptions)
-    this.id = this.view.webContents.id
-    this.window = parentWindow
-    this.webContents = this.view.webContents
-    this.window.contentView.addChildView(this.view)
-  }
-
-  destroy() {
-    if (this.destroyed) return
-
-    this.destroyed = true
-
-    this.hide()
-
-    this.window.contentView.removeChildView(this.view)
-    this.window = undefined
-
-    if (!this.webContents.isDestroyed()) {
-      if (this.webContents.isDevToolsOpened()) {
-        this.webContents.closeDevTools()
-      }
-
-      // TODO: why is this no longer called?
-      this.webContents.emit('destroyed')
-
-      this.webContents.destroy()
-    }
-
-    this.webContents = undefined
-    this.view = undefined
-  }
-
-  loadURL(url) {
-    return this.view.webContents.loadURL(url)
-  }
-
-  show() {
-    this.invalidateLayout()
-    this.startResizeListener()
-    this.view.setVisible(true)
-  }
-
-  hide() {
-    this.stopResizeListener()
-    this.view.setVisible(false)
-  }
-
-  reload() {
-    this.view.webContents.reload()
-  }
-
-  invalidateLayout() {
-    const [width, height] = this.window.getSize()
-    const padding = 4
-    this.view.setBounds({
-      x: padding,
-      y: toolbarHeight,
-      width: width - padding * 2,
-      height: height - toolbarHeight - padding,
-    })
-    this.view.setBorderRadius(8)
-  }
-
-  // Replacement for BrowserView.setAutoResize. This could probably be better...
-  startResizeListener() {
-    this.stopResizeListener()
-    this.window.on('resize', this.invalidateLayout)
-  }
-  stopResizeListener() {
-    this.window.off('resize', this.invalidateLayout)
-  }
-}
+const { Tab } = require('./tab.js')
 
 class Tabs extends EventEmitter {
   tabList = []
   selected = null
 
-  constructor(browserWindow) {
+  // damecon customizations
+  newTabPageUrl = null
+  hidden = false
+  hideAddressBarFor = []
+
+  constructor(browserWindow, options) {
     super()
     this.window = browserWindow
+    // damecon customizations
+    this.newTabPageUrl = options.newTabPageUrl ?? 'about:blank'
+    this.hidden = options?.hidden ?? false
+    this.hideAddressBarFor = options?.hideAddressBarFor ?? []
   }
 
   destroy() {
@@ -106,16 +36,33 @@ class Tabs extends EventEmitter {
   }
 
   create(webContentsViewOptions) {
+    console.log('>> tabs.create()', webContentsViewOptions?.initialUrl)
     const tab = new Tab(this.window, webContentsViewOptions)
     this.tabList.push(tab)
     if (!this.selected) this.selected = tab
-    tab.show() // must be attached to window
+    // damecon customizations
+    if (
+      webContentsViewOptions?.initialUrl &&
+      this.hideAddressBarFor.includes(webContentsViewOptions.initialUrl)
+    ) {
+      tab.hideToolbar = true
+    }
+
+    //tab.show() // must be attached to window
+    const url = webContentsViewOptions?.initialUrl ?? this.newTabPageUrl
+    console.log('>> creating tab', url, webContentsViewOptions)
+    tab.webContents.on('did-navigate', (origin, targets) => {
+      this.emit('tab-navigated', tab, url)
+    })
+    tab.webContents.loadURL(url)
+
     this.emit('tab-created', tab)
-    this.select(tab.id)
+    //this.select(tab.id)
     return tab
   }
 
   remove(tabId) {
+    console.log('>> tabs.remove()', tabId)
     const tabIndex = this.tabList.findIndex((tab) => tab.id === tabId)
     if (tabIndex < 0) {
       throw new Error(`Tabs.remove: unable to find tab.id = ${tabId}`)
@@ -134,13 +81,52 @@ class Tabs extends EventEmitter {
     }
   }
 
+  removeExtensionTabs(extensionId) {
+    console.log('>> tabs: removing tabs for extension', extensionId)
+    console.log(
+      '>> - all ids',
+      this.tabList.map((tab) => tab.id),
+    )
+    const tabs = this.tabList.filter((tab) =>
+      tab.webContents.getURL().startsWith(`chrome-extension://${extensionId}/`),
+    )
+    tabs.forEach((tab) => tab.destroy())
+  }
+
   select(tabId) {
+    console.log('>> tabs.select()', tabId)
     const tab = this.get(tabId)
     if (!tab) return
-    if (this.selected) this.selected.hide()
-    tab.show()
+    if (this.selected && this.selected != tab) this.selected.hide()
+    if (!this.hidden) tab.show()
     this.selected = tab
     this.emit('tab-selected', tab)
+  }
+
+  deselect() {
+    console.log('>> tabs.deselect()')
+    const tab = this.selected
+    if (tab) {
+      this.emit('tab-deselected', tab)
+      tab.hide()
+    }
+    this.selected = null
+  }
+
+  hide() {
+    console.log('>> tabs.hide()')
+    if (this.selected) this.deselect()
+    this.hidden = true
+  }
+
+  show() {
+    console.log('>> tabs.show()')
+    this.hidden = false
+    if (this.selected) this.selected.show()
+  }
+
+  updateLayout(headerHeight) {
+    this.tabList.forEach((tab) => tab.updateLayout(headerHeight))
   }
 }
 

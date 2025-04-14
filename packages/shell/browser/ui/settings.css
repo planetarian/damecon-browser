@@ -1,0 +1,130 @@
+#root {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--chrome-fg-color);
+  color: var(--chrome-text-color);
+  align-items: center;
+}
+
+#settings {
+  width: 100%;
+  overflow-y: auto;
+}
+
+#settings-menu {
+  width: 100px;
+  padding-left: 6px;
+  flex: 0 1 auto;
+}
+
+#settings-menu .menu-header {
+  padding-top: 55px;
+}
+
+#settings-menu .menu-header * {
+  text-align: center;
+}
+
+#settings-menu .menu-items {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  width: 100%;
+  gap: 8px;
+}
+
+#settings-menu .menu-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 10px 20px;
+}
+
+#settings-menu .menu-item:hover {
+  background-color: var(--control-hover-bg-color);
+}
+
+#settings-menu .menu-item[data-active] {
+  background-color: var(--chrome-mid-color);
+}
+
+#settings-menu .menu-item .icon,
+#settings-menu .menu-item .icon img,
+#settings-menu .menu-item .icon i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  width: 48px;
+  font-size: 34pt;
+}
+
+#settings-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px;
+}
+
+#settings-container .settings-content {
+  flex: 1 1 auto;
+  background-color: var(--content-bg-color);
+  border-radius: 6px;
+  padding: 20px;
+  color: var(--content-text-color);
+  width: 100%;
+  overflow-y: auto;
+}
+
+#settings-container .settings {
+  max-width: 500px;
+}
+
+#settings-container .settings-group {
+  margin-bottom: 10px;
+  background-color: var(--content-fg-color);
+  border-radius: 6px;
+  padding: 20px;
+}
+
+#background-processes {
+  flex: 0 1 auto;
+  min-width: 50%;
+  display: flex;
+  flex-direction: column;
+  margin-left: -100px;
+}
+
+#background-processes .process {
+  flex: 1 1 auto;
+  padding-bottom: 20px;
+}
+
+#background-processes .process > div {
+  margin: 2px;
+}
+
+#background-processes .process-text {
+  display: flex;
+  flex-direction: row;
+}
+
+#background-processes .process-name {
+  flex: 1 1 auto;
+}
+
+#background-processes .process-phase {
+  flex: 1 1 auto;
+}
+
+#background-processes .process-progress {
+  flex: 0 1 auto;
+}
+
+#background-processes .progress-bar {
+  background-color: var(--chrome-bg-color);
+}
