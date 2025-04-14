@@ -1,7 +1,7 @@
 {
   "name": "damecon-browser",
   "productName": "Damecon",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A minimal browser designed for playing Kantai Collection via KC3Kai.",
   "main": ".webpack/main",
   "scripts": {
@@ -33,6 +33,7 @@
     "@electron-forge/plugin-webpack": "^7.5.0",
     "copy-webpack-plugin": "^11.0.0",
     "cross-env": "^7.0.2",
-    "electron": "35.0.0-beta.12"
+    "electron": "35.0.0-beta.12",
+    "worker-loader": "^3.0.8"
   }
 }

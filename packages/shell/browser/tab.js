@@ -1,4 +1,4 @@
-const { WebContentsView } = require('electron')
+import { WebContentsView } from 'electron'
 
 const toolbarHeight = 64
 const tabBarHeight = 32
@@ -89,4 +89,4 @@ class Tab {
   }
 }
 
-exports.Tab = Tab
+export default Tab

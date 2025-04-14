@@ -1,10 +1,10 @@
-const { parentPort } = require('worker_threads')
-const { KC3Updater } = require('./kc3updater.js')
+import { parentPort } from 'worker_threads'
+import { path } from 'path'
+import KC3Updater from './kc3updater.js'
 
 let isUpdating = false
 let channel
 
-//processes = {};
 const onProcessStarted = function (name) {
   parentPort.postMessage({ type: 'update-process-started', data: { name } })
 }
