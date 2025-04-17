@@ -158,10 +158,14 @@ export async function loadAllExtensions(
         extension.manifest.manifest_version === 3 &&
         extension.manifest.background?.service_worker
       ) {
+        throw new Error('Manifest V3 extensions with Service Workers are not currently supported.')
+
+        /*
         const scope = `chrome-extension://${extension.id}`
         await session.serviceWorkers.startWorkerForScope(scope).catch(() => {
           console.error(`Failed to start worker for extension ${extension.id}`)
         })
+        */ // Electron 35
       }
     } catch (error) {
       console.error(`Failed to load extension from ${ext.path}`)

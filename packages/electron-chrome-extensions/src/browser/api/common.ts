@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
-import { BaseWindow, BrowserWindow, nativeImage } from 'electron'
+import { BrowserWindow, nativeImage } from 'electron'
 
 export interface TabContents extends Electron.WebContents {
   favicon?: string
@@ -127,4 +127,7 @@ export const matchesTitlePattern = (pattern: string, title: string) => {
   return title.match(regexp)
 }
 
-export const getAllWindows = () => [...BaseWindow.getAllWindows(), ...BrowserWindow.getAllWindows()]
+export const getAllWindows = () => [
+  // ...BaseWindow.getAllWindows(), // Electron 35
+  ...BrowserWindow.getAllWindows(),
+]

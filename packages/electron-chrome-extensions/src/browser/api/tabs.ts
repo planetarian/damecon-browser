@@ -311,7 +311,9 @@ export class TabsAPI {
       ? this.ctx.store.getTabById(tabId)
       : this.ctx.store.getActiveTabOfCurrentWindow()
     if (!tab) return
-    tab.navigationHistory.goForward()
+    tab
+      //.navigationHistory // Electron 35
+      .goForward()
   }
 
   private goBack(event: ExtensionEvent, arg1?: unknown) {
@@ -320,7 +322,9 @@ export class TabsAPI {
       ? this.ctx.store.getTabById(tabId)
       : this.ctx.store.getActiveTabOfCurrentWindow()
     if (!tab) return
-    tab.navigationHistory.goBack()
+    tab
+      //.navigationHistory // Electron 35
+      .goBack()
   }
 
   onCreated(tabId: number) {
