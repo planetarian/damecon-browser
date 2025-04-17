@@ -36,7 +36,7 @@
             data-bind="attr: { 'data-active': self.selectedConfigPage() === $data.id }, click: self.selectConfigPage">
             <span class="icon">
               <!-- ko if: $data.img-->
-              <img data-bind="attr: { src: img }">
+              <img data-bind="attr: { src: img, alt: name }" alt="icon">
               <!-- /ko -->
               <!-- ko if: $data.faIcon -->
               <i data-bind="attr: { class: faIcon }"></i>
@@ -97,13 +97,9 @@
     <script type="text/html" id="settings-content-1">
       <h3>KC3Kai Settings</h3>
       <div class="settings-group">
-        <div class="form-check">
-          <input class="form-check-input" id="kc3openstartpage" type="checkbox" data-bind="checked: kc3OpenStartPage"></input>
-          <label class="form-check-label" for="kc3openstartpage">Auto-open start page</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" id="kc3opendmmpage" type="checkbox" data-bind="checked: kc3OpenDMMPage"></input>
-          <label class="form-check-label" for="kc3opendmmpage">Auto-open KanColle</label>
+        <div class="form-group">
+          <label for="kc3gamepage">Game startup page</label>
+          <select id="kc3gamepage" class="form-control" data-bind="options: kc3GamePages, value: kc3GamePage"></select>
         </div>
         <div class="form-check">
           <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: kc3OpenDevtools"></input>
