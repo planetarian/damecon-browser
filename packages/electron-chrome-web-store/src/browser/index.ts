@@ -128,6 +128,7 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   // Add preload script to session
   const preloadPath = resolvePreloadPath(opts.modulePath)
 
+  /*
   if ('registerPreloadScript' in session) {
     session.registerPreloadScript({
       id: 'electron-chrome-web-store',
@@ -135,9 +136,10 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
       filePath: preloadPath,
     })
   } else {
-    // @ts-expect-error Deprecated electron@<35
-    session.setPreloads([...session.getPreloads(), preloadPath])
-  }
+    // // @ts-expect-error Deprecated electron@<35
+    */
+  session.setPreloads([...session.getPreloads(), preloadPath])
+  //}
 
   if (!existsSync(preloadPath)) {
     console.error(

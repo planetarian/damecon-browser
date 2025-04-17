@@ -212,7 +212,8 @@ saveImage()`
     } else {
       if (
         app.isEmojiPanelSupported() &&
-        !['input-number', 'input-telephone'].includes(params.formControlType)
+        !['number', 'tel', 'other'].includes(params.inputFieldType)
+        //!['input-number', 'input-telephone'].includes(params.formControlType) // Electron 35
       ) {
         append({
           label: labels.emoji,
@@ -290,13 +291,23 @@ saveImage()`
 
     append({
       label: labels.back,
-      enabled: webContents.navigationHistory.canGoBack(),
-      click: () => webContents.navigationHistory.goBack(),
+      enabled: webContents
+        //.navigationHistory // Electron 35
+        .canGoBack(),
+      click: () =>
+        webContents
+          //.navigationHistory // Electron 35
+          .goBack(),
     })
     append({
       label: labels.forward,
-      enabled: webContents.navigationHistory.canGoForward(),
-      click: () => webContents.navigationHistory.goForward(),
+      enabled: webContents
+        //.navigationHistory // Electron 35
+        .canGoForward(),
+      click: () =>
+        webContents
+          //.navigationHistory // Electron 35
+          .goForward(),
     })
     append({
       label: labels.reload,

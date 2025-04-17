@@ -1,7 +1,5 @@
-import { WebContentsView } from 'electron'
+const { BrowserView } = require('electron')
 
-const toolbarHeight = 64
-const tabBarHeight = 32
 let topBarHeight = 64
 
 class Tab {
@@ -9,11 +7,12 @@ class Tab {
     // needed because browserwindow events don't bind this correctly
     this.updateLayout = this.updateLayout.bind(this)
 
-    this.view = new WebContentsView(webContentsViewOptions)
+    this.view = new BrowserView()
     this.id = this.view.webContents.id
     this.window = parentWindow
     this.webContents = this.view.webContents
-    this.window.contentView.addChildView(this.view)
+    this.window.addBrowserView(this.view)
+    this.visible = false
   }
 
   destroy() {
@@ -23,7 +22,7 @@ class Tab {
 
     this.hide()
 
-    this.window.contentView.removeChildView(this.view)
+    this.window.removeBrowserView(this.view)
     this.window = undefined
 
     if (!this.webContents.isDestroyed()) {
@@ -47,16 +46,16 @@ class Tab {
   }
 
   show() {
-    console.log('>> tab.show()')
+    console.log('>> tab.show()', this.id)
+    this.visible = true
     this.updateLayout()
-    this.startResizeListener()
-    this.view.setVisible(true)
   }
 
   hide() {
-    console.log('>> tab.hide()')
-    this.stopResizeListener()
-    this.view.setVisible(false)
+    console.log('>> tab.hide()', this.id)
+    //this.stopResizeListener()
+    this.visible = false
+    this.updateLayout()
   }
 
   reload() {
@@ -69,23 +68,30 @@ class Tab {
     const padding = 0
     if (headerHeight > 0) topBarHeight = headerHeight
     const yOffset = topBarHeight // this.hideToolbar ? tabBarHeight : toolbarHeight;
-    this.view.setBackgroundColor('white')
-    this.view.setBounds({
-      x: padding,
-      y: yOffset,
-      width: width - padding * 2,
-      height: height - yOffset - padding,
-    })
+
+    if (this.visible) {
+      this.view.setBackgroundColor('white')
+      this.view.setBounds({
+        x: padding,
+        y: yOffset,
+        width: width - padding * 2,
+        height: height - yOffset - padding,
+      })
+      this.view.setAutoResize({ width: true, height: true })
+    } else {
+      this.view.setAutoResize({ width: false, height: false })
+      this.view.setBounds({ x: -1000, y: 0, width: 0, height: 0 })
+    }
     //this.view.setBorderRadius(8)
   }
 
   // Replacement for BrowserView.setAutoResize. This could probably be better...
   startResizeListener() {
     this.stopResizeListener()
-    this.window.on('resize', this.updateLayout)
+    //this.window.on('resize', this.updateLayout)
   }
   stopResizeListener() {
-    this.window.off('resize', this.updateLayout)
+    //this.window.off('resize', this.updateLayout)
   }
 }
 

@@ -132,7 +132,10 @@ async function beginInstall(
     }
 
     const browserWindow = BrowserWindow.fromWebContents(sender)
-    if (!senderFrame || senderFrame.isDestroyed()) {
+    if (
+      !senderFrame
+      // || senderFrame.isDestroyed() // Electron 35
+    ) {
       return { result: Result.UNKNOWN_ERROR }
     }
 
@@ -220,7 +223,11 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
     if (result.result === Result.SUCCESS) {
       queueMicrotask(() => {
         const ext = webStoreState.session.getExtension(details.id)
-        if (ext && senderFrame && !senderFrame.isDestroyed()) {
+        if (
+          ext &&
+          senderFrame
+          // && !senderFrame.isDestroyed() // Electron 35
+        ) {
           try {
             senderFrame.send('chrome.management.onInstalled', getExtensionInfo(ext))
           } catch (error) {
