@@ -44,7 +44,8 @@
 }
 
 #settings-menu .menu-item:hover {
-  background-color: var(--control-hover-bg-color);
+  background-color: var(--control-hover-light-bg-color);
+  backdrop-filter: var(--control-hover-light-bg-filter);
 }
 
 #settings-menu .menu-item[data-active] {
