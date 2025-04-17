@@ -263,6 +263,7 @@ ul {
   bottom: 0;
 }
 .tab-container[data-active]::after {
+  margin: 4px 0 0 0;
   border-radius: 4px 4px 0 0;
   box-shadow: 0px 0px 4px 0px #0000007f;
 }
@@ -328,7 +329,7 @@ ul {
 
 .app-drag {
   -webkit-app-region: drag;
-  height: calc(100% - 5px);
+  height: 100%;
   min-width: 1rem;
   align-self: flex-end;
 }
