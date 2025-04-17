@@ -1,7 +1,11 @@
 :root {
   /* electron-chrome-extensions colors */
   --browser-action-badge-outline: var(--tab-color);
-  --control-hover-bg-color: #ffffff17;
+  --control-hover-light-bg-color: #ffffff01;
+  --control-hover-dark-bg-color: #ffffff01;
+  --control-hover-layered-bg-color: #ffffff2f;
+  --control-hover-light-bg-filter: saturate(110%) brightness(110%);
+  --control-hover-dark-bg-filter: saturate(110%) brightness(120%);
   --control-text-color: #ecececc0;
   --chrome-text-color: #ececec;
 }
@@ -25,7 +29,7 @@ body[data-color-theme='savatieri'] {
 }
 
 body[data-color-theme='taiha'] {
-  --chrome-fg-color: #aa1d1d;
+  --chrome-fg-color: #aa1d17;
   --chrome-mid-color: #84141c;
   --chrome-bg-color: #410b13;
 }
@@ -184,7 +188,8 @@ ul {
 }
 
 #createtab:hover {
-  background: var(--control-hover-bg-color);
+  background: var(--control-hover-dark-bg-color);
+  backdrop-filter: var(--control-hover-dark-bg-filter);
 }
 
 .tab-container {
@@ -248,12 +253,14 @@ ul {
 }
 
 .tab:hover {
-  background-color: var(--control-hover-bg-color);
+  background-color: var(--control-hover-dark-bg-color);
+  backdrop-filter: var(--control-hover-dark-bg-filter);
   z-index: 2;
 }
 
 .tab-container[data-active] .tab {
   background-color: var(--chrome-fg-color);
+  backdrop-filter: none;
   z-index: 2;
 }
 .tab-container::after {
@@ -324,7 +331,7 @@ ul {
 }
 
 .tab .controls .control.close:hover {
-  background-color: var(--control-hover-bg-color);
+  background-color: var(--control-hover-layered-bg-color);
 }
 
 .tab .controls .control:disabled {
@@ -356,7 +363,8 @@ ul {
 }
 
 .window-controls .control:hover {
-  background: var(--control-hover-bg-color);
+  background: var(--control-hover-dark-bg-color);
+  backdrop-filter: var(--control-hover-dark-bg-filter);
   color: white;
 }
 
@@ -413,7 +421,8 @@ ul {
 }
 
 .toolbar .control:hover {
-  background: var(--control-hover-bg-color);
+  background: var(--control-hover-light-bg-color);
+  backdrop-filter: var(--control-hover-dark-bg-filter);
   color: var(--control-text-color);
   border-radius: 3px;
 }
@@ -430,7 +439,8 @@ browser-action-list::part(action) {
   background-size: 16px 16px;
 }
 browser-action-list::part(action):hover {
-  background-color: var(--control-hover-bg-color);
+  background-color: var(--control-hover-light-bg-color);
+  backdrop-filter: var(--control-hover-dark-bg-filter);
 }
 
 #zoom-presenter {
