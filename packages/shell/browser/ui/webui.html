@@ -8,45 +8,47 @@
   </head>
   <body>
     <div id="root">
-      <div id="topbar">
-        <div id="tabstrip">
-          <ul class="tab-list">
-            <template id="tabtemplate">
-              <li class="tab-container">
-                <div class="tab">
-                  <img class="favicon" />
-                  <span class="title"></span>
-                  <div class="controls">
-                    <button class="control audio" disabled>🔊</button>
-                    <button class="control close"><i class="fa-sharp fa-solid fa-xmark"></i></button>
+      <div id="topbar-container">
+        <div id="topbar">
+          <div id="tabstrip">
+            <ul class="tab-list">
+              <template id="tabtemplate">
+                <li class="tab-container">
+                  <div class="tab">
+                    <img class="favicon" />
+                    <span class="title"></span>
+                    <div class="controls">
+                      <button class="control audio" disabled>🔊</button>
+                      <button class="control close"><i class="fa-sharp fa-solid fa-xmark"></i></button>
+                    </div>
                   </div>
-                </div>
-              </li>
-            </template>
-          </ul>
-          <button id="createtab">
-            <div style="position: relative; width: 13px; height: 13px;">
-              <div style="background: #ffffffaf; width: 1px; height: 13px; position: absolute; left: 6px;"></div>
-              <div style="background: #ffffffaf; width: 13px; height: 1px; position: absolute; top: 6px;"></div>
+                </li>
+              </template>
+            </ul>
+            <button id="createtab" type="button" title="create new tab">
+              <div style="position: relative; width: 13px; height: 13px;">
+                <div style="background: #ffffffaf; width: 1px; height: 13px; position: absolute; left: 6px;"></div>
+                <div style="background: #ffffffaf; width: 13px; height: 1px; position: absolute; top: 6px;"></div>
+              </div>
+            </button>
+            <div class="app-drag app-drag-right"></div>
+            <div class="window-controls">
+              <button id="minimize" type="button" class="control" title="minimize"><i class="fa-regular fa-window-minimize fa-xs"></i></button>
+              <button id="maximize" type="button" class="control" title="maximize"><i class="fa-regular fa-square-full fa-2xs"></i></button>
+              <button id="close" type="button" class="control" title="close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-          </button>
-          <div class="app-drag app-drag-right"></div>
-          <div class="window-controls">
-            <button id="minimize" class="control"><i class="fa-regular fa-window-minimize fa-xs"></i></button>
-            <button id="maximize" class="control"><i class="fa-regular fa-square-full fa-2xs"></i></button>
-            <button id="close" class="control"><i class="fa-solid fa-xmark"></i></button>
           </div>
-        </div>
-        <div class="toolbar">
-          <div class="page-controls">
-            <button id="goback" class="control"><i class="fa-solid fa-arrow-left"></i></button>
-            <button id="goforward" class="control"><i class="fa-solid fa-arrow-right"></i></button>
-            <button id="reload" class="control"><i class="fa-solid fa-rotate-right"></i></button>
+          <div class="toolbar">
+            <div class="page-controls">
+              <button id="goback" type="button" class="control" title="go back"><i class="fa-solid fa-arrow-left"></i></button>
+              <button id="goforward" type="button" class="control" title="go forward"><i class="fa-solid fa-arrow-right"></i></button>
+              <button id="reload" type="button" class="control" title="reload"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <div class="address-bar">
+              <input id="addressurl" spellcheck="false" title="address bar"/>
+            </div>
+            <browser-action-list id="actions"></browser-action-list>
           </div>
-          <div class="address-bar">
-            <input id="addressurl" spellcheck="false" />
-          </div>
-          <browser-action-list id="actions"></browser-action-list>
         </div>
       </div>
       <div id="zoom-presenter" class="hidden"><span>100%</span></div>

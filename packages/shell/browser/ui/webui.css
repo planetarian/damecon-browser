@@ -122,6 +122,10 @@ ul {
   background: var(--chrome-bg-color);
 }
 
+#root[data-display-mode='maximized'] #topbar {
+  margin-top: -4px;
+}
+
 #topbar.tabui-hidden .toolbar {
   display: none;
 }
@@ -268,14 +272,14 @@ ul {
   box-shadow: 0px 0px 4px 0px #0000007f;
 }
 
+.tab-container[data-tab-position]::after {
+  top: 8px;
+  bottom: 5px;
+}
 .tab-container[data-tab-position='before']::after {
-  top: 4px;
-  bottom: 4px;
   border-left: 1px solid #ffffff3f;
 }
 .tab-container[data-tab-position='after']::after {
-  top: 4px;
-  bottom: 4px;
   border-right: 1px solid #ffffff3f;
 }
 
