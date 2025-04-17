@@ -55,24 +55,27 @@ this.viewModel = function () {
 
   self.windowStyleThemes = ['andra', 'daybreak', 'savatieri', 'taiha', 'zuiun']
   self.windowStyleBrightnesses = ['system', 'light', 'dark']
+  self.kc3GamePages = ['none', 'kc3', 'dmm']
   self.kc3UpdateChannels = ['release', 'master', 'develop', 'custom1', 'custom2']
   self.kc3UpdateSchedules = ['startup', 'daily', 'weekly', 'manual']
 
+  // This sets up the mappings between knockout properties and config keys.
   self.settings = {
     window: {
       windowStyleTheme: 'window.style.theme',
       windowStyleBrightness: 'window.style.brightness',
     },
     kc3kai: {
+      kc3GamePage: 'kc3kai.startup.gamePage',
+      kc3OpenStartPage: 'kc3kai.startup.openStartPage', // TODO: remove
+      kc3OpenDMMPage: 'kc3kai.startup.openDMMPage', // TODO: remove
+      kc3OpenDevtools: 'kc3kai.startup.openDevtools',
+      kc3OpenStratRoom: 'kc3kai.startup.openStratRoom',
       kc3UpdateChannel: 'kc3kai.update.channel',
       kc3Custom1Location: 'kc3kai.custom1Location',
       kc3Custom2Location: 'kc3kai.custom2Location',
       kc3UpdateSchedule: 'kc3kai.update.schedule',
       kc3UpdateAuto: 'kc3kai.update.auto',
-      kc3OpenStartPage: 'kc3kai.startup.openStartPage',
-      kc3OpenDMMPage: 'kc3kai.startup.openDMMPage',
-      kc3OpenDevtools: 'kc3kai.startup.openDevtools',
-      kc3OpenStratRoom: 'kc3kai.startup.openStratRoom',
     },
     proxy: {
       proxyClientHost: 'proxy.client.host',
