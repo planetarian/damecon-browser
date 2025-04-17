@@ -86,11 +86,11 @@
       <div class="settings-group">
         <div class="form-group">
           <label for="windowstyletheme">Theme</label>
-          <select id="windowstyletheme" class="form-control" data-bind="options: windowStyleThemes, value: windowStyleTheme"></select>
+          <select id="windowstyletheme" class="form-control" data-bind="options: settings.window.windowStyleTheme.options, value: windowStyleTheme"></select>
         </div>
         <div class="form-group">
           <label for="windowstylebright">Brightness</label>
-          <select id="windowstylebright" class="form-control" data-bind="options: windowStyleBrightnesses, value: windowStyleBrightness"></select>
+          <select id="windowstylebright" class="form-control" data-bind="options: settings.window.windowStyleBrightness.options, value: windowStyleBrightness"></select>
         </div>
       </div>
     </script>
@@ -99,7 +99,7 @@
       <div class="settings-group">
         <div class="form-group">
           <label for="kc3gamepage">Game startup page</label>
-          <select id="kc3gamepage" class="form-control" data-bind="options: kc3GamePages, value: kc3GamePage"></select>
+          <select id="kc3gamepage" class="form-control" data-bind="options: settings.kc3kai.kc3GamePage.options, value: kc3GamePage"></select>
         </div>
         <div class="form-check">
           <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: kc3OpenDevtools"></input>
@@ -113,12 +113,12 @@
       <div class="settings-group">
         <div class="form-group">
           <label for="kc3updatechannel">Update channel</label>
-          <select id="kc3updatechannel" class="form-control" data-bind="options: kc3UpdateChannels, value: kc3UpdateChannel, enable: canSetKc3Channel"></select>
+          <select id="kc3updatechannel" class="form-control" data-bind="options: settings.kc3kai.kc3UpdateChannel.options, value: kc3UpdateChannel, enable: canSetKc3Channel"></select>
         </div>
         <!-- ko if: !kc3UpdateChannel()?.startsWith('custom') -->
         <div class="form-group">
           <label for="kc3updateschedule">Update schedule</label>
-          <select id="kc3updateschedule" class="form-control" data-bind="options: kc3UpdateSchedules, value: kc3UpdateSchedule"></select>
+          <select id="kc3updateschedule" class="form-control" data-bind="options: settings.kc3kai.kc3UpdateSchedule.options, value: kc3UpdateSchedule"></select>
         </div>
         <div class="form-check">
           <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: kc3UpdateAuto"></input>
