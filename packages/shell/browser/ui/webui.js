@@ -71,6 +71,7 @@ class WebUI {
             self.init(msg.data.windowId)
             break
           case 'webui-display-mode':
+            if (this.$.root.dataset.displayMode == msg.data.mode) return
             this.$.root.dataset.displayMode = msg.data.mode
             const height = this.$.topBarContainer.clientHeight
             await ipc.send('webui-message', 'webui-display-mode-changed', { height })
