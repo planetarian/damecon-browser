@@ -100,13 +100,13 @@
           <div class="form-items-scroller">
             <!-- ko foreach: config.window.view.hideAddressBarSites -->
             <div class="form-array-string-item">
-              <input type="text" class="form-control" data-bind="value: $rawData, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
+              <input type="text" class="form-control" data-bind="value: $rawData, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. https://tsunkit.net/*)">
               <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)"><i class="fa-sharp fa-solid fa-xmark"></i></button>
             </div>
             <!-- /ko -->
             <div class="form-array-string-item add-new">
               <label for="new-hide-adressbar-site-input">Add:</label>
-              <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
+              <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. https://tsunkit.net/*)">
               <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
             </div>
           </div>
