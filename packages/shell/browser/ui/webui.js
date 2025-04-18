@@ -75,6 +75,9 @@ class WebUI {
             const height = this.$.topBarContainer.clientHeight
             await ipc.send('webui-message', 'webui-display-mode-changed', { height })
             break
+          case 'webui-render-toolbar':
+            if (self.activeTabId > -1) self.renderToolbar(msg.data.forceShow)
+            break
           default:
             alert('webui.js received unknown webui-message type:\n' + JSON.stringify(msg))
             break
@@ -356,7 +359,7 @@ class WebUI {
       if (!tab.active && i > 0) tab.tabPosition = activeFound ? 'after' : 'before'
       this.renderTab(tab)
     }
-    this.renderToolbar(activeTab)
+    this.renderToolbar()
   }
 
   renderTab(tab) {
@@ -389,12 +392,25 @@ class WebUI {
     tabElem.querySelector('.audio').disabled = !tab.audible
   }
 
-  async renderToolbar(tab) {
+  async renderToolbar(forceShow = false) {
+    let tab
+    for (let i = 0; i < this.tabList.length; i++) {
+      if (this.tabList[i].id == this.activeTabId) {
+        tab = this.tabList[i]
+        break
+      }
+    }
+    if (!tab) {
+      console.error('no tab to render toolbar for.')
+      return
+    }
     console.log('rendering toolbar for tab', tab)
     this.$.addressUrl.value = tab?.url
 
     let hideBar = false
-    if (tab?.url == this.settingsUrl) {
+    if (forceShow) {
+      hideBar = false
+    } else if (tab?.url == this.settingsUrl) {
       hideBar = true
     } else if (tab?.url) {
       hideBar = await ipc.send('webui-message', 'get-should-hide-addressbar', { url: tab.url })
