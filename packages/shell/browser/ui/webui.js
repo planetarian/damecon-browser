@@ -389,11 +389,18 @@ class WebUI {
     tabElem.querySelector('.audio').disabled = !tab.audible
   }
 
-  renderToolbar(tab) {
+  async renderToolbar(tab) {
     console.log('rendering toolbar for tab', tab)
     this.$.addressUrl.value = tab?.url
-    // this.$.browserActions.tab = tab.id
-    if (tab?.url == this.settingsUrl) this.$.toolBar.dataset.hidden = ''
+
+    let hideBar = false
+    if (tab?.url == this.settingsUrl) {
+      hideBar = true
+    } else if (tab?.url) {
+      hideBar = await ipc.send('webui-message', 'get-should-hide-addressbar', { url: tab.url })
+    } else hideBar = false
+
+    if (hideBar) this.$.toolBar.dataset.hidden = ''
     else delete this.$.toolBar.dataset.hidden
   }
 }

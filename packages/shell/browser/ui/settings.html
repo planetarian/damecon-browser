@@ -14,6 +14,7 @@
   <script type="text/javascript" src="assets/js/knockout-i18n.js"></script>
 
   <script type="text/javascript" src="common.js"></script>
+  <script type="text/javascript" src="config-utils.js"></script>
   <script type="text/javascript" src="settings.js"></script>
 
   <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
@@ -86,20 +87,20 @@
       <div class="settings-group">
         <div class="form-group">
           <label for="windowstyletheme">Theme</label>
-          <select id="windowstyletheme" class="form-control" data-bind="options: settings.window.windowStyleTheme.options, value: windowStyleTheme"></select>
+          <select id="windowstyletheme" class="form-control" data-bind="options: configSchema.window.style.theme.options, value: config.window.style.theme"></select>
         </div>
         <div class="form-group">
           <label for="windowstylebright">Brightness</label>
-          <select id="windowstylebright" class="form-control" data-bind="options: settings.window.windowStyleBrightness.options, value: windowStyleBrightness"></select>
+          <select id="windowstylebright" class="form-control" data-bind="options: configSchema.window.style.brightness.options, value: config.window.style.brightness"></select>
         </div>
       </div>
       <div class="settings-group">
         <div class="form-group">
           <label>Hide address bar for sites</label>
           <div class="form-items-scroller">
-            <!-- ko foreach: windowHideAddressBarSites -->
+            <!-- ko foreach: config.window.view.hideAddressBarSites -->
             <div class="form-array-string-item">
-              <input type="text" class="form-control" data-bind="value: $data" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
+              <input type="text" class="form-control" data-bind="value: $rawData, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
               <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)"><i class="fa-sharp fa-solid fa-xmark"></i></button>
             </div>
             <!-- /ko -->
@@ -117,46 +118,46 @@
       <div class="settings-group">
         <div class="form-group">
           <label for="kc3gamepage">Game startup page</label>
-          <select id="kc3gamepage" class="form-control" data-bind="options: settings.kc3kai.kc3GamePage.options, value: kc3GamePage"></select>
+          <select id="kc3gamepage" class="form-control" data-bind="options: configSchema.kc3kai.startup.gamePage.options, value: config.kc3kai.startup.gamePage"></select>
         </div>
         <div class="form-check">
-          <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: kc3OpenDevtools"></input>
+          <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: config.kc3kai.startup.openDevtools"></input>
           <label class="form-check-label" for="kc3opendevtools">Auto-open devtools</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input" id="kc3openstratroom" type="checkbox" data-bind="checked: kc3OpenStratRoom"></input>
+          <input class="form-check-input" id="kc3openstratroom" type="checkbox" data-bind="checked: config.kc3kai.startup.openStratRoom"></input>
           <label class="form-check-label" for="kc3openstratroom">Auto-open strategy room</label>
         </div>
       </div>
       <div class="settings-group">
         <div class="form-group">
           <label for="kc3updatechannel">Update channel</label>
-          <select id="kc3updatechannel" class="form-control" data-bind="options: settings.kc3kai.kc3UpdateChannel.options, value: kc3UpdateChannel, enable: canSetKc3Channel"></select>
+          <select id="kc3updatechannel" class="form-control" data-bind="options: configSchema.kc3kai.update.channel.options, value: config.kc3kai.update.channel, enable: canSetKc3Channel"></select>
         </div>
-        <!-- ko if: !kc3UpdateChannel()?.startsWith('custom') -->
+        <!-- ko if: !config.kc3kai.update.channel()?.startsWith('custom') -->
         <div class="form-group">
           <label for="kc3updateschedule">Update schedule</label>
-          <select id="kc3updateschedule" class="form-control" data-bind="options: settings.kc3kai.kc3UpdateSchedule.options, value: kc3UpdateSchedule"></select>
+          <select id="kc3updateschedule" class="form-control" data-bind="options: configSchema.kc3kai.update.schedule.options, value: config.kc3kai.update.schedule"></select>
         </div>
         <div class="form-check">
-          <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: kc3UpdateAuto"></input>
+          <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: config.kc3kai.update.auto"></input>
           <label class="form-check-label" for="kc3updatesauto">Download/apply updates automatically</label>
         </div>
         <!-- /ko -->
-        <!-- ko if: kc3UpdateChannel() === 'custom1' -->
+        <!-- ko if: config.kc3kai.update.channel() === 'custom1' -->
         <div class="form-group">
           <label for="kc3custom1location">Location</label>
           <div class="input-group">
-            <input type="text" id="kc3custom1location" class="form-control" data-bind="value: kc3Custom1Location"/>
+            <input type="text" id="kc3custom1location" class="form-control" data-bind="value: config.kc3kai.update.custom1Location"/>
             <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
           </div>
         </div>
         <!-- /ko -->
-        <!-- ko if: kc3UpdateChannel() === 'custom2' -->
+        <!-- ko if: config.kc3kai.update.channel() === 'custom2' -->
         <div class="form-group">
           <label for="kc3custom2location">Location</label>
           <div class="input-group">
-            <input type="text" id="kc3custom2location" class="form-control" data-bind="value: kc3Custom2Location"/>
+            <input type="text" id="kc3custom2location" class="form-control" data-bind="value: config.kc3kai.update.custom2Location"/>
             <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
           </div>
         </div>
@@ -164,10 +165,10 @@
       </div>
       <div class="form-group">
         <p>Note: reloading will automatically close any currently-open KC3 tabs.</p>
-        <!-- ko if: !kc3UpdateChannel()?.startsWith('custom') -->
+        <!-- ko if: !config.kc3kai.update.channel()?.startsWith('custom') -->
         <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Check for updates & reload</button>
         <!-- /ko -->
-        <!-- ko if: kc3UpdateChannel()?.startsWith('custom') -->
+        <!-- ko if: config.kc3kai.update.channel()?.startsWith('custom') -->
         <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Reload</button>
         <!-- /ko -->
       </div>
@@ -177,14 +178,14 @@
       <div class="settings-group">
         <div class="form-group">
           <label for="proxyclienthost">Host</label>
-          <input id="proxyclienthost" type="text" class="form-control" data-bind="value: proxyClientHost" placeholder="Enter IP/host (e.g. 127.0.0.1)">
+          <input id="proxyclienthost" type="text" class="form-control" data-bind="value: config.proxy.client.host" placeholder="Enter IP/host (e.g. 127.0.0.1)">
         </div>
         <div class="form-group">
           <label for="proxyclientport">Port</label>
-          <input id="proxyclientport" type="number" class="form-control" data-bind="value: proxyClientPort" placeholder="Enter port (e.g. 8081)">
+          <input id="proxyclientport" type="number" class="form-control" data-bind="value: config.proxy.client.port" placeholder="Enter port (e.g. 8081)">
         </div>
         <div class="form-check">
-          <input class="form-check-input" id="proxyclientenable" type="checkbox" data-bind="checked: proxyClientEnable"></input>
+          <input class="form-check-input" id="proxyclientenable" type="checkbox" data-bind="checked: config.proxy.client.enable"></input>
           <label class="form-check-label" for="proxyclientenable">Enabled</label>
         </div>
       </div>
