@@ -104,7 +104,8 @@
             </div>
             <!-- /ko -->
             <div class="form-array-string-item add-new">
-              <input type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
+              <label for="new-hide-adressbar-site-input">Add:</label>
+              <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
               <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
             </div>
           </div>

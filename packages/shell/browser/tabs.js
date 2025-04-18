@@ -8,7 +8,6 @@ class Tabs extends EventEmitter {
   // damecon customizations
   newTabPageUrl = null
   hidden = false
-  hideAddressBarFor = []
 
   constructor(browserWindow, options) {
     super()
@@ -16,7 +15,6 @@ class Tabs extends EventEmitter {
     // damecon customizations
     this.newTabPageUrl = options.newTabPageUrl ?? 'about:blank'
     this.hidden = options?.hidden ?? false
-    this.hideAddressBarFor = options?.hideAddressBarFor ?? []
   }
 
   destroy() {
@@ -40,13 +38,6 @@ class Tabs extends EventEmitter {
     const tab = new Tab(this.window, webContentsViewOptions)
     this.tabList.push(tab)
     if (!this.selected) this.selected = tab
-    // damecon customizations
-    if (
-      webContentsViewOptions?.initialUrl &&
-      this.hideAddressBarFor.includes(webContentsViewOptions.initialUrl)
-    ) {
-      tab.hideToolbar = true
-    }
 
     //tab.show() // must be attached to window
     const url = webContentsViewOptions?.initialUrl ?? this.newTabPageUrl
