@@ -26,7 +26,13 @@ function ViewModel() {
 
   // loads values from the current config into ko properties
   self.prepConfigProperties = async function () {
-    const config = await configStore.all()
+    let config
+    try {
+      config = await configStore.all()
+    } catch (error) {
+      alert('settings fetch bug. please refresh the page.')
+      throw error
+    }
     configApplySync(config, self.prepConfigProperty)
     self.settingsInitialized(true)
   }
