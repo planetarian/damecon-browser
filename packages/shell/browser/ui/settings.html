@@ -31,9 +31,9 @@
           <!--<h5>Damecon</h5>-->
         </div>
         <div class="menu-items">
-          <!-- ko foreach: self.configPages -->
+          <!-- ko foreach: configPages -->
           <div class="menu-item"
-            data-bind="attr: { 'data-active': self.selectedConfigPage() === $data.id }, click: self.selectConfigPage">
+            data-bind="attr: { 'data-active': $parent.selectedConfigPage() === $data.id }, click: $parent.selectConfigPage">
             <span class="icon">
               <!-- ko if: $data.img-->
               <img data-bind="attr: { src: img, alt: name }" alt="icon">
@@ -50,7 +50,7 @@
       <div id="settings-container">
         <div class="settings-content">
           <div class="settings">
-            <!-- ko template: { name: 'settings-content-' + self.selectedConfigPage() } -->
+            <!-- ko template: { name: 'settings-content-' + selectedConfigPage() } -->
             <!-- /ko -->
           </div>
         </div>
@@ -91,6 +91,23 @@
         <div class="form-group">
           <label for="windowstylebright">Brightness</label>
           <select id="windowstylebright" class="form-control" data-bind="options: settings.window.windowStyleBrightness.options, value: windowStyleBrightness"></select>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="form-group">
+          <label>Hide address bar for sites</label>
+          <div class="form-items-scroller">
+            <!-- ko foreach: windowHideAddressBarSites -->
+            <div class="form-array-string-item">
+              <input type="text" class="form-control" data-bind="value: $data" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
+              <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)"><i class="fa-sharp fa-solid fa-xmark"></i></button>
+            </div>
+            <!-- /ko -->
+            <div class="form-array-string-item add-new">
+              <input type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="Host (supports wildcards e.g. tsunkit.net/nav/*)">
+              <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
+            </div>
+          </div>
         </div>
       </div>
     </script>

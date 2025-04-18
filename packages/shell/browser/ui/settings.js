@@ -1,4 +1,4 @@
-this.viewModel = function () {
+function ViewModel() {
   const self = this
   self.configPages = [
     {
@@ -121,6 +121,24 @@ this.viewModel = function () {
     (newValue) => (document.querySelector('body').dataset.brightness = newValue),
   )
 
+  self.newHideAddressBarSite = ko.observable('')
+  self.canAddNewHideAddressBarSite = ko.computed(
+    () =>
+      !!self.newHideAddressBarSite() &&
+      (!self.windowHideAddressBarSites() ||
+        !self.windowHideAddressBarSites().includes(self.newHideAddressBarSite())),
+  )
+  self.addNewHideAddressBarSite = () => {
+    const site = self.newHideAddressBarSite()
+    if (!self.canAddNewHideAddressBarSite()) return
+    self.newHideAddressBarSite('')
+    if (!Array.isArray(self.windowHideAddressBarSites())) self.windowHideAddressBarSites([])
+    self.windowHideAddressBarSites.push(site)
+  }
+  self.removeHideAddressBarSite = (value) => {
+    self.windowHideAddressBarSites.remove(value)
+  }
+
   self.kc3IsUpdating = ko.observable(false)
   self.kc3UpdatingChannel = ko.observable('')
   self.canSetKc3Channel = ko.computed(() => !self.kc3IsUpdating())
@@ -203,12 +221,14 @@ this.viewModel = function () {
     return true
   })
 
-  init()
+  self.init = async function () {
+    await self.fetchConfig()
+    const updateStatus = await sendMessage('kc3-get-isupdating')
+    self.kc3IsUpdating(updateStatus.isUpdating)
+    self.kc3UpdatingChannel(updateStatus.channel)
+  }
+
+  self.init()
 }
-const init = async function () {
-  await self.fetchConfig()
-  const updateStatus = await sendMessage('kc3-get-isupdating')
-  self.kc3IsUpdating(updateStatus.isUpdating)
-  self.kc3UpdatingChannel(updateStatus.channel)
-}
-$(document).ready(() => ko.applyBindings(this.viewModel))
+this.vm = new ViewModel()
+$(document).ready(() => ko.applyBindings(this.vm))
