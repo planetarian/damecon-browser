@@ -11,7 +11,7 @@ const sendMessage = function (type, data) {
         resolve(response.result)
       } else {
         reject(
-          `Failed to send message to UI (${JSON.stringify(response.error)}): ${type ?? 'unknown-type'} ${JSON.stringify(data)}`,
+          `Failed to send message to UI (${JSON.stringify(response?.error)}): ${type ?? 'unknown-type'} ${JSON.stringify(data)}`,
         )
       }
     })

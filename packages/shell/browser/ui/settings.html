@@ -26,6 +26,7 @@
 
 <body>
   <div id="root">
+    <!-- ko if: settingsInitialized -->
     <div id="settings">
       <div id="settings-menu">
         <div class="menu-header">
@@ -80,6 +81,7 @@
         </div>
       </div>
     </div>
+    <!-- /ko -->
   </div>
   <div id="settings-content-templates">
     <script type="text/html" id="settings-content-0">
