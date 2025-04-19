@@ -51,3 +51,6 @@ const access = function (o, s) {
 }
 
 const sleep = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs))
+
+const urlRegex =
+  /^(?<base>(?:(?<scheme>[\w-]+:)(?<open>\/\/\/?)(?<cred>(?<user>[\w]*)(?::(?<pw>[\w]*))?@)?)?(?<host>[\d\w\.-]+?(?<tld>\.[\w]+)?)(?::(?<port>\d+))?)?(?:\/(?<path>[\/\\\w\.()-]*))?(?:(?<query>[?][^#]*)?(?<hash>#.*)?)*$/gim
