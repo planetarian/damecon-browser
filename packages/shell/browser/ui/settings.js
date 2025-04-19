@@ -31,24 +31,55 @@ function ViewModel() {
     let error
     while (!config && tries++ < 3) {
       try {
+        console.log('>> fetching config...')
         config = await configStore.all()
+        console.log('  >> got config', config)
       } catch (err) {
         error = err
-        alert('settings fetch bug encountered. trying again..')
+        console.log('  >> got error', err)
+        // TODO: actually fix this
+        console.error('!! ERROR !! settings fetch bug encountered. trying again..')
       }
     }
     if (!config) throw error ?? 'Unknown error occurred fetching config.'
     configApplySync(config, self.prepConfigProperty)
-    self.settingsInitialized(true)
+
+    document.querySelector('body').dataset.colorTheme = config.window.style.theme()
+    config.window.style.theme.subscribe(
+      (newValue) => (document.querySelector('body').dataset.colorTheme = newValue),
+    )
+    document.querySelector('body').dataset.brightness = config.window.style.brightness()
+    config.window.style.brightness.subscribe(
+      (newValue) => (document.querySelector('body').dataset.brightness = newValue),
+    )
+    return config
   }
 
   self.prepConfigProperty = function (path, config, key, keySchema) {
+    // convert to observable
     let value = config[key]
-    if (typeof value === 'function') value = value()
+    if (typeof config[key] !== 'function') {
+      config[key] =
+        keySchema.type == 'array' ? ko.observableArray(config[key]) : ko.observable(config[key])
+    } else {
+      value = config[key]()
+    }
+    if (config[key].getSubscriptionsCount() === 0) {
+      config[key].subscribe(function (newValue) {
+        if (!self.settingsInitialized()) return
+        console.log('>> setting changed', path, newValue)
+        if (Array.isArray(newValue))
+          newValue = newValue.map((v) => (typeof v === 'function' ? v() : v))
+        configStore.set(path, newValue)
+      })
+    }
+
+    // if it's an array, prepare observables for its members
     if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {
         if (typeof value[i] !== 'function') value[i] = ko.observable(value[i])
-        if (value[i].getSubscriptionsCount() == 0) {
+
+        if (value[i].getSubscriptionsCount() === 0) {
           value[i].subscribe((newValue) => {
             if (!self.settingsInitialized()) return
             console.log('setting changed', `${path}[${i}]`, newValue)
@@ -60,7 +91,8 @@ function ViewModel() {
         }
       }
     }
-    access(self.config, path)(value)
+    let prop = config[key]
+    prop(value)
   }
 
   // updates the config from ko properties
@@ -82,30 +114,6 @@ function ViewModel() {
   self.settingsInitialized = ko.observable(false)
 
   self.processes = ko.observableArray([])
-
-  // initialize viewmodel ko properties and auto-save
-  self.config = configApplySync(self.config, (path, config, key, keySchema) => {
-    console.log('schema:', keySchema)
-    config[key] = keySchema.type == 'array' ? ko.observableArray() : ko.observable()
-    if (config[key].getSubscriptionsCount() == 0) {
-      config[key].subscribe(function (newValue) {
-        if (!self.settingsInitialized()) return
-        console.log('setting changed', path, newValue)
-        if (Array.isArray(newValue))
-          newValue = newValue.map((v) => (typeof v === 'function' ? v() : v))
-        configStore.set(path, newValue)
-      })
-    }
-  })
-
-  console.log('done prepping config', self.config)
-
-  self.config.window.style.theme.subscribe(
-    (newValue) => (document.querySelector('body').dataset.colorTheme = newValue),
-  )
-  self.config.window.style.brightness.subscribe(
-    (newValue) => (document.querySelector('body').dataset.brightness = newValue),
-  )
 
   self.newHideAddressBarSite = ko.observable('')
   self.canAddNewHideAddressBarSite = ko.computed(
@@ -136,7 +144,7 @@ function ViewModel() {
   self.kc3UpdatingChannel = ko.observable('')
   self.canSetKc3Channel = ko.computed(() => !self.kc3IsUpdating())
   self.canUpdateKc3 = ko.computed(
-    () => !self.kc3IsUpdating() && !!self.config.kc3kai.update.channel(),
+    () => !self.kc3IsUpdating() && !!self.config?.kc3kai?.update?.channel(),
   )
   self.canSetKc3Channel.subscribe((newValue) => console.log('canSetKc3Channel:', newValue))
   self.canUpdateKc3.subscribe((newValue) => console.log('canUpdateKc3:', newValue))
@@ -217,7 +225,9 @@ function ViewModel() {
   })
 
   self.init = async function () {
-    await self.prepConfigProperties()
+    self.config = await self.prepConfigProperties()
+    console.log('done prepping config', self.config)
+    self.settingsInitialized(true)
     const updateStatus = await sendMessage('kc3-get-isupdating')
     self.kc3IsUpdating(updateStatus.isUpdating)
     self.kc3UpdatingChannel(updateStatus.channel)
