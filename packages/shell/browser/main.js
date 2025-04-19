@@ -347,6 +347,15 @@ class Browser {
     this.initSession()
     setupMenu(this)
 
+    app.on('browser-window-focus', () => {
+      globalShortcut.registerAll(['CommandOrControl+W'], () =>
+        this.getFocusedWindow().getFocusedTab().destroy(),
+      )
+    })
+    app.on('browser-window-blur', () => {
+      globalShortcut.unregisterAll()
+    })
+
     if ('registerPreloadScript' in this.session) {
       this.session.registerPreloadScript({
         id: 'shell-preload',
