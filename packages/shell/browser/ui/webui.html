@@ -10,25 +10,41 @@
     <link rel="stylesheet" href="webui.css" />
   </head>
   <body>
-    <div id="root">
+    <!-- ko if: windowId() > 0 -->
+    <div id="root" data-bind="attr: { class: `platform-${platform} theme-${theme()} brightness-${brightness()}` }">
       <div id="topbar-container">
         <div id="topbar">
           <div id="tabstrip">
             <ul class="tab-list">
-              <template id="tabtemplate">
-                <li class="tab-container">
-                  <div class="tab">
-                    <img class="favicon" />
-                    <span class="title"></span>
-                    <div class="controls">
-                      <button class="control audio" disabled><i class="fa-sharp fa-solid fa-volume-up"></i></button>
-                      <button class="control close"><i class="fa-sharp fa-solid fa-xmark"></i></button>
-                    </div>
+              <!-- ko foreach: tabs() -->
+              <li data-bind="attr: { class: `tab-container tab-id-${id} tab-position-${position}${active ? ' tab-active' : ''}${url==$parent.settingsUrl ? ' tab-compact' : ''}`},
+                event: {
+                  mousedown: $parent.browserEventTabMouseDown.bind($parent),
+                  mousemove: $parent.browserEventTabMouseMove.bind($parent),
+                  mouseup: $parent.browserEventTabMouseUp.bind($parent)
+                }">
+                <div class="tab">
+                  <!-- ko if: favIconUrl -->
+                  <img class="favicon" data-bind="attr: { src: favIconUrl }" alt="page icon" />
+                  <!-- /ko -->
+                  <span class="title" data-bind="text: title"></span>
+                  <div class="controls">
+                    <!-- ko if: audible -->
+                    <button type="button" class="control audio" title="audio playback" disabled>
+                      <i class="fa-sharp fa-solid fa-volume-up"></i>
+                    </button>
+                    <!-- /ko -->
+                    <!-- ko if: url != $parent.settingsUrl -->
+                    <button type="button" class="control close" title="close tab" data-bind="click: $parent.browserActionCloseTab.bind($parent)">
+                      <i class="fa-sharp fa-solid fa-xmark"></i>
+                    </button>
+                    <!-- /ko -->
                   </div>
-                </li>
-              </template>
+                </div>
+              </li>
+              <!-- /ko -->
             </ul>
-            <button id="createtab" type="button" title="create new tab">
+            <button id="createtab" type="button" title="create new tab" data-bind="click: browserActionNewTab">
               <div style="position: relative; width: 13px; height: 13px;">
                 <div style="background: #ffffffaf; width: 1px; height: 13px; position: absolute; left: 6px;"></div>
                 <div style="background: #ffffffaf; width: 13px; height: 1px; position: absolute; top: 6px;"></div>
@@ -41,6 +57,7 @@
               <button id="close" type="button" class="control" title="close" data-bind="click: windowActionClose"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
+          <!-- ko if: showToolbar -->
           <div class="toolbar">
             <div class="page-controls">
               <button id="goback" type="button" class="control" title="go back" data-bind="click: browserActionGoBack"><i class="fa-solid fa-arrow-left"></i></button>
@@ -52,11 +69,13 @@
             </div>
             <browser-action-list id="actions"></browser-action-list>
           </div>
+          <!-- /ko -->
         </div>
       </div>
       <div id="zoom-presenter" class="hidden"><span>100%</span></div>
     </div>
     <script src="./common.js"></script>
     <script src="./webui.js"></script>
+    <!-- /ko -->
   </body>
 </html>

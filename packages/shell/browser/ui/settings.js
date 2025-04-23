@@ -1,5 +1,9 @@
 function ViewModel() {
   const self = this
+
+  self.theme = ko.observable('andra')
+  self.brightness = ko.observable('system')
+
   self.configPages = [
     {
       id: 0,
@@ -18,6 +22,7 @@ function ViewModel() {
       //faIcon: 'fa-solid fa-circle-nodes'
     },
   ]
+
   self.config = {}
 
   self.selectConfigPage = function (item) {
@@ -44,14 +49,10 @@ function ViewModel() {
     if (!config) throw error ?? 'Unknown error occurred fetching config.'
     configApplySync(config, self.prepConfigProperty)
 
-    document.querySelector('body').dataset.colorTheme = config.window.style.theme()
-    config.window.style.theme.subscribe(
-      (newValue) => (document.querySelector('body').dataset.colorTheme = newValue),
-    )
-    document.querySelector('body').dataset.brightness = config.window.style.brightness()
-    config.window.style.brightness.subscribe(
-      (newValue) => (document.querySelector('body').dataset.brightness = newValue),
-    )
+    self.theme(config.window.style.theme())
+    config.window.style.theme.subscribe(newValue => self.theme(newValue))
+    self.brightness(config.window.style.brightness())
+    config.window.style.brightness.subscribe(newValue => self.brightness(newValue))
     return config
   }
 

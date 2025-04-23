@@ -10,37 +10,37 @@
   --chrome-text-color: #ececec;
 }
 
-body[data-color-theme='andra'] {
+#root.theme-andra {
   --chrome-fg-color: #0c4c7c;
   --chrome-mid-color: #083a60;
   --chrome-bg-color: #062a46;
 }
 
-body[data-color-theme='daybreak'] {
+#root.theme-daybreak {
   --chrome-fg-color: #7d6180;
   --chrome-mid-color: #695069;
   --chrome-bg-color: #452c4b;
 }
 
-body[data-color-theme='savatieri'] {
+#root.theme-savatieri {
   --chrome-fg-color: #b04858;
   --chrome-mid-color: #7b343e;
   --chrome-bg-color: #612931;
 }
 
-body[data-color-theme='taiha'] {
+#root.theme-taiha {
   --chrome-fg-color: #aa1d17;
   --chrome-mid-color: #84141c;
   --chrome-bg-color: #410b13;
 }
 
-body[data-color-theme='zuiun'] {
+#root.theme-zuiun {
   --chrome-fg-color: #356b40;
   --chrome-mid-color: #204626;
   --chrome-bg-color: #142a1c;
 }
 
-body[data-color-theme='electron-shell'] {
+#root.theme-electron-shell {
   --chrome-fg-color: #745c97;
   --chrome-mid-color: #544a79;
   --chrome-bg-color: #39375b;
@@ -201,22 +201,22 @@ ul {
   min-width: 44px;
 }
 
-.tab-container[data-compact] {
+.tab-container.tab-compact {
   width: 44px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-items: center;
 }
-.tab-container[data-compact] .tab {
+.tab-container.tab-compact .tab {
   flex: 1 1 auto;
   justify-content: center;
 }
-.tab-container[data-compact] .favicon[src] {
+.tab-container.tab-compact .favicon[src] {
   margin: 0 !important;
 }
-.tab-container[data-compact] .title,
-.tab-container[data-compact] .controls {
+.tab-container.tab-compact .title,
+.tab-container.tab-compact .controls {
   display: none;
 }
 
@@ -258,7 +258,7 @@ ul {
   z-index: 2;
 }
 
-.tab-container[data-active] .tab {
+.tab-container.tab-active .tab {
   background-color: var(--chrome-fg-color);
   backdrop-filter: none;
   z-index: 2;
@@ -273,20 +273,21 @@ ul {
   right: 6px;
   bottom: 0;
 }
-.tab-container[data-active]::after {
+.tab-container.tab-active::after {
   margin: 4px 0 0 0;
   border-radius: 4px 4px 0 0;
   box-shadow: 0px 0px 4px 0px #0000007f;
 }
 
-.tab-container[data-tab-position]::after {
+.tab-container.tab-position-before::after,
+.tab-container.tab-position-after::after {
   top: 8px;
   bottom: 5px;
 }
-.tab-container[data-tab-position='before']::after {
+.tab-container.tab-position-before::after {
   border-left: 1px solid #ffffff3f;
 }
-.tab-container[data-tab-position='after']::after {
+.tab-container.tab-position-after::after {
   border-right: 1px solid #ffffff3f;
 }
 
