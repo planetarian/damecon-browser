@@ -25,13 +25,19 @@ function ViewModel() {
   }
 
   // loads values from the current config into ko properties
-  self.fetchConfig = async function () {
+  self.prepConfigProperties = async function () {
     const config = await configStore.all()
-    configApplySync(config, (path, config, key, keySchema) => {
-      let value = config[key]
-      if (Array.isArray(value)) {
-        for (let i = 0; i < value.length; i++) {
-          value[i] = ko.observable(value[i])
+    configApplySync(config, self.prepConfigProperty)
+    self.settingsInitialized(true)
+  }
+
+  self.prepConfigProperty = function (path, config, key, keySchema) {
+    let value = config[key]
+    if (typeof value === 'function') value = value()
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        if (typeof value[i] !== 'function') value[i] = ko.observable(value[i])
+        if (value[i].getSubscriptionsCount() == 0) {
           value[i].subscribe((newValue) => {
             if (!self.settingsInitialized()) return
             console.log('setting changed', `${path}[${i}]`, newValue)
@@ -42,9 +48,8 @@ function ViewModel() {
           })
         }
       }
-      access(self.config, path)(value)
-    })
-    self.settingsInitialized(true)
+    }
+    access(self.config, path)(value)
   }
 
   // updates the config from ko properties
@@ -71,11 +76,15 @@ function ViewModel() {
   self.config = configApplySync(self.config, (path, config, key, keySchema) => {
     console.log('schema:', keySchema)
     config[key] = keySchema.type == 'array' ? ko.observableArray() : ko.observable()
-    config[key].subscribe(function (newValue) {
-      if (!self.settingsInitialized()) return
-      console.log('setting changed', path, newValue)
-      configStore.set(path, newValue)
-    })
+    if (config[key].getSubscriptionsCount() == 0) {
+      config[key].subscribe(function (newValue) {
+        if (!self.settingsInitialized()) return
+        console.log('setting changed', path, newValue)
+        if (Array.isArray(newValue))
+          newValue = newValue.map((v) => (typeof v === 'function' ? v() : v))
+        configStore.set(path, newValue)
+      })
+    }
   })
 
   console.log('done prepping config', self.config)
@@ -100,10 +109,16 @@ function ViewModel() {
     self.newHideAddressBarSite('')
     if (!Array.isArray(self.config.window.view.hideAddressBarSites()))
       self.config.window.view.hideAddressBarSites([])
-    self.config.window.view.hideAddressBarSites.push(site)
+    const newItem = ko.observable(site)
+    self.config.window.view.hideAddressBarSites.push(newItem)
+    this.prepConfigProperty(
+      'window.view.hideAddressBarSites',
+      self.config.window.view,
+      'hideAddressBarSites',
+    )
   }
   self.removeHideAddressBarSite = (value) => {
-    self.config.window.view.hideAddressBarSites.remove(value)
+    self.config.window.view.hideAddressBarSites.remove((v) => v() === value)
   }
 
   self.kc3IsUpdating = ko.observable(false)
@@ -191,7 +206,7 @@ function ViewModel() {
   })
 
   self.init = async function () {
-    await self.fetchConfig()
+    await self.prepConfigProperties()
     const updateStatus = await sendMessage('kc3-get-isupdating')
     self.kc3IsUpdating(updateStatus.isUpdating)
     self.kc3UpdatingChannel(updateStatus.channel)
