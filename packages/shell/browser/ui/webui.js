@@ -97,10 +97,7 @@ class WebUI {
     // set a new active tab if previous one is invalid
     const activeTab = tabs.find((tab) => tab.active())
     const newId = activeTab?.id || tabs[0].id
-    if (
-      (this.activeTabId() == -1 || !tabs.some((t) => t.id === this.activeTabId())) &&
-      tabs.length > 0
-    ) {
+    if ((this.activeTabId() == -1 || this.activeTabId() !== newId) && tabs.length > 0) {
       //console.log('reinitializing active tab', newId)
       this.activeTabId(newId)
     }
@@ -179,13 +176,14 @@ class WebUI {
       this.updateTabSeparators(this.tabs())
       if (details.url != tab.url) await this.updateTabShouldHideAddressBar(details)
     })
-    chrome.tabs.onRemoved.addListener((tabId) => {
+    chrome.tabs.onRemoved.addListener(async (tabId) => {
       if (!this.tabs().some((t) => t.id == tabId)) return
-      this.renderTabs()
+      await this.renderTabs()
     })
-    chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
+    chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
       if (!this.tabs().some((t) => t.id == tabId)) return
-      this.renderTabs()
+      await this.renderTabs()
+      await this.updateTabShouldHideAddressBar(this.activeTab())
     })
   }
 
