@@ -262,11 +262,13 @@ class WebUI {
       this.hoveringTabId = tab.id
       this.updateTabSeparators(this.tabs())
     }
-    if (this.heldTabId == -1 || tab.url == this.settingsUrl || tab.id == this.heldTabId) return
+    if (this.heldTabId == -1) return
+    const heldTab = this.tabs().find((t) => t.id === this.heldTabId)
+    if (heldTab.url == this.settingsUrl || tab.url == this.settingsUrl || tab.id == this.heldTabId)
+      return
 
     const thisIndex = this.tabs().findIndex((t) => t.id == tab.id)
 
-    const heldTab = this.tabs().find((t) => t.id === this.heldTabId)
     if (!heldTab.active()) await chrome.tabs.update(heldTab.id, { active: true })
     await chrome.tabs.move(this.heldTabId, { index: thisIndex })
     await this.renderTabs()
