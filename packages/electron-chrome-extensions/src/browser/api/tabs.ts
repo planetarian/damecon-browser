@@ -54,6 +54,7 @@ export class TabsAPI {
     handle('tabs.getCurrent', this.getCurrent.bind(this))
     handle('tabs.create', this.create.bind(this))
     handle('tabs.insertCSS', this.insertCSS.bind(this))
+    handle('tabs.move', this.move.bind(this))
     handle('tabs.query', this.query.bind(this))
     handle('tabs.reload', this.reload.bind(this))
     handle('tabs.update', this.update.bind(this))
@@ -199,6 +200,36 @@ export class TabsAPI {
     if (details.code) {
       tab.insertCSS(details.code)
     }
+  }
+
+  // TODO: support moving between windows
+  private move(
+    event: ExtensionEvent,
+    tabIds: number | number[],
+    details: chrome.tabs.MoveProperties,
+  ) {
+    if (!tabIds) return
+    if (typeof tabIds === 'number') tabIds = [tabIds]
+
+    const index = typeof details.index === 'undefined' ? -1 : details.index
+
+    const windowId =
+      (details?.windowId || TabsAPI.WINDOW_ID_CURRENT) > 0
+        ? details.windowId
+        : TabsAPI.WINDOW_ID_CURRENT
+    const windowTabs = this.getAllInWindow(event, windowId)
+
+    const tabWcs = []
+    for (const tabId of tabIds) {
+      const tabWc = this.ctx.store.getTabById(tabId)
+      if (!tabWc) continue
+      const tab = this.getTabDetails(tabWc)
+      if (!tab || !windowTabs.some((t) => t && t.id == tab.id)) continue
+      tabWcs.push(tabWc)
+    }
+    if (!tabWcs.length) return
+
+    this.ctx.store.moveTabs(tabWcs, index)
   }
 
   private query(event: ExtensionEvent, info: chrome.tabs.QueryInfo = {}) {

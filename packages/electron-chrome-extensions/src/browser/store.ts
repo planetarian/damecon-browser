@@ -121,6 +121,14 @@ export class ExtensionStore extends EventEmitter {
     this.emit('tab-added', tab)
   }
 
+  moveTabs(tabs: Electron.WebContents[] | Electron.WebContents, index: number) {
+    tabs = (tabs instanceof Array ? tabs : [tabs]).filter((t) => this.tabs.has(t))
+    tabs.forEach(this.tabs.delete, this.tabs)
+    const end = Array.from(this.tabs).slice(index == -1 ? this.tabs.size : index)
+    end.forEach(this.tabs.delete, this.tabs)
+    this.tabs = new Set([...this.tabs, ...tabs, ...end])
+  }
+
   removeTab(tab: Electron.WebContents) {
     if (!this.tabs.has(tab)) return
 
