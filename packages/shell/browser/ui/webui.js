@@ -1,3 +1,10 @@
+ko.bindingHandlers.rendered = {
+  init: function (element, valueAccessor) {
+    //console.log("rendered: ", valueAccessor())
+    valueAccessor()()
+  },
+}
+
 class WebUITab {
   inputUrl = ko.observable()
 }
@@ -9,47 +16,53 @@ class WebUI {
   brightness = ko.observable('system')
 
   tabs = ko.observableArray([])
-  activeTab = ko.observable({})
+  activeTab = ko.pureComputed(() =>
+    this.activeTabId() > 0 ? this.tabs().find((t) => t.id === this.activeTabId()) : null,
+  )
+
   activeTabId = ko.observable(-1)
   heldTabId = -1
   closingTabId = -1
-  
+  hoveringTabId = -1
+  topbarHeight = 0
+
   windowState = ko.observable()
-  showToolbar = ko.observable()
 
   platform = navigator.userAgentData.platform.toLowerCase()
   settingsUrl = 'chrome-extension://' + chrome.runtime.id + '/settings.html'
 
   constructor() {
     ipc.on('webui-message', async (ev, msg) => {
-      console.log('>> from main: ', msg)
+      //console.log('>> from main: ', msg)
       if (msg?.type) await this.receiveFromMain(msg)
       else alert('webui.js received invalid webui-message from main:\n' + JSON.stringify(msg))
     })
-    chrome.runtime.onMessage.addListener(function(msg, sender, sendresponse) {
-      ;(async () => {
-        console.log('>> from renderer: ', msg)
-        if (msg?.type) {
-          try {
-            const result = await this.receiveFromRenderer(msg)
-            sendresponse({ result, complete: true })
-          }
-          catch (error) {
-            alert (`webui.js encountered an error handling message from renderer\nError: ${error}\nMessage:${JSON.stringify(msg)}\n`)
-            sendresponse({ error, complete: false })
-          }
-        }
-        else alert ('webui.js received invalid message from renderer\n' + JSON.stringify(msg))
-      })()
-      return true
-    }.bind(this))
+    chrome.runtime.onMessage.addListener(
+      function (msg, sender, sendresponse) {
+        ;(async () => {
+          //console.log('>> from renderer: ', msg)
+          if (msg?.type) {
+            try {
+              const result = await this.receiveFromRenderer(msg)
+              sendresponse({ result, complete: true })
+            } catch (error) {
+              alert(
+                `webui.js encountered an error handling message from renderer\nError: ${error}\nMessage:${JSON.stringify(msg)}\n`,
+              )
+              sendresponse({ error, complete: false })
+            }
+          } else alert('webui.js received invalid message from renderer\n' + JSON.stringify(msg))
+        })()
+        return true
+      }.bind(this),
+    )
   }
 
   async init(windowId) {
     if (this.windowId() >= 0) return
     this.windowId(windowId)
 
-    console.log('>> init()', windowId)
+    //console.log('>> init()', windowId)
     await this.initTheme()
     // wait for initial tab to load
     await sleep(100)
@@ -64,54 +77,114 @@ class WebUI {
   }
 
   async initTabs() {
-    console.log('>> initTabs()')
-    this.renderTabs()
-
-    // TODO
-    //if (activeTab)
-      //this.setActiveTab(activeTab)
-
+    //console.log('>> initTabs()')
+    await this.renderTabs()
+    for (const tab of this.tabs()) await this.updateTabShouldHideAddressBar(tab)
     this.setupBrowserListeners()
   }
 
   async renderTabs() {
-    console.log('>> rendering tabs')
-    const tabs = [...await this.getTabs()]
+    //console.log('>> rendering tabs')
+    const tabs = [...(await this.getCurrentTabs())]
+    for (const tab of tabs) this.prepareTab(tab)
+    this.updateTabSeparators(tabs)
+    this.tabs(tabs)
 
+    // set a new active tab if previous one is invalid
+    const activeTab = tabs.find((tab) => tab.active())
+    const newId = activeTab?.id || tabs[0].id
+    if (
+      (this.activeTabId() == -1 || !tabs.some((t) => t.id === this.activeTabId())) &&
+      tabs.length > 0
+    ) {
+      //console.log('reinitializing active tab', newId)
+      this.activeTabId(newId)
+    }
+  }
+
+  prepareTab(tab, oldTab) {
+    if (!tab.separator) tab.separator = ko.observable(oldTab?.separator() ?? 'none')
+    if (!tab.showAddressBar) tab.showAddressBar = ko.observable(oldTab?.showAddressBar() ?? false)
+    if (!tab.urlInput)
+      tab.urlInput = ko.observable(oldTab?.url != tab.url ? tab.url : oldTab.urlInput())
+    if (typeof tab.active !== 'function') tab.active = ko.observable(tab.active)
+  }
+
+  async updateTabSeparators(tabs) {
+    if (!tabs) return
     let foundActive = false
     for (let i = 0; i < tabs.length; i++) {
       const tab = tabs[i]
-      foundActive = foundActive || tab.active
-      if (tab.active)
-        tab.position = 'active'
-      else if (!foundActive && i > 0 && i < tabs.length-1)
-        tab.position = 'before'
-      else if (foundActive)
-        tab.position = 'after'
-      else
-        tab.position = 'none'
+      foundActive = foundActive || tab.active()
+      if (
+        !tab.active() &&
+        tab.id != this.hoveringTabId &&
+        (i === tabs.length - 1 || (!tabs[i + 1].active() && tabs[i + 1].id != this.hoveringTabId))
+      )
+        tab.separator('right')
+      else tab.separator('none')
     }
+  }
 
-    this.tabs(tabs)
+  async updateTabShouldHideAddressBar(tab) {
+    const shouldHideAddressBar = await this.sendToMain('get-should-hide-addressbar', {
+      url: tab.url,
+    })
+    tab.showAddressBar(!shouldHideAddressBar)
+  }
 
-    const activeTab = tabs.find(tab => tab.active)
-    if (this.activeTabId() == -1 && tabs.length > 0)
-      this.activeTabId(activeTab?.id || tabs[0].id)
+  async setTopbarObserver() {
+    const resizeObserver = new ResizeObserver(async (entries) => {
+      for (const entry of entries) {
+        const height = entry.devicePixelContentBoxSize[0].blockSize
+        const factor = window.devicePixelRatio
+        if (height != this.topbarHeight) {
+          this.topbarHeight = height
+          await this.sendTopbarSize()
+          await this.sendToMain('webui-zoom-changed', { height, factor })
+        }
+      }
+    })
+    resizeObserver.observe(document.getElementById('topbar-container'))
   }
 
   async setupBrowserListeners() {
-    chrome.tabs.onCreated.addListener(tab => {
+    chrome.tabs.onCreated.addListener(async (tab) => {
       if (tab.windowId !== this.windowId()) return
       this.renderTabs()
+      for (const t of this.tabs()) await this.updateTabShouldHideAddressBar(t)
     })
-    chrome.tabs.onUpdated.addListener(tabId => {
-      if (!this.tabs().some(t => t.id == tabId)) return
+    chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, details) => {
+      const tab = this.tabs().find((t) => t.id == tabId)
+      if (!tab) return
+
+      //console.log('>> updating tab', details.id)
+      this.prepareTab(details, tab)
+
+      const idx = this.tabs().findIndex((t) => t.id == tabId)
+      if (idx > -1) this.tabs.splice(idx, 1, details)
+      else console.error(`couldn't find tab with id ${tabId}`)
+
+      if (this.activeTabId() > 0 && details.active() && this.activeTabId() != details.id) {
+        //console.log('>> also updating old selected tab', this.activeTabId())
+        const currentActive = this.tabs().find((t) => t.id === this.activeTabId())
+        currentActive.active(false)
+        //console.log('setting new active tab', details.id)
+        this.activeTabId(details.id)
+      }
+      this.updateTabSeparators(this.tabs())
+      if (details.url != tab.url) await this.updateTabShouldHideAddressBar(details)
+    })
+    chrome.tabs.onRemoved.addListener((tabId) => {
+      if (!this.tabs().some((t) => t.id == tabId)) return
       this.renderTabs()
     })
-    chrome.tabs.onRemoved.addListener(tabId => {
-      if (!this.tabs().some(t => t.id == tabId)) return
-      this.renderTabs()
-    })
+  }
+
+  async sendTopbarSize() {
+    const height = document.getElementById('topbar-container').clientHeight
+    //console.log(">> sending new topbar height", height)
+    await this.sendToMain('webui-display-mode-changed', { height })
   }
 
   async receiveFromMain(msg) {
@@ -128,22 +201,19 @@ class WebUI {
         this.init(msg.data.windowId)
         break
       case 'webui-display-mode':
-        const win = await this.getWindow()
-        // needed?
+        await this.sendTopbarSize()
         break
-      case 'webui-render-toolbar':
-        // TODO
-        //this.tryShowToolbar(msg.data.forceShow)
+      case 'webui-toggle-addressbar':
+        //console.log(msg)
+        if (!this.activeTab() || this.activeTab().url == this.settingsUrl) return
+        this.activeTab().showAddressBar(!this.activeTab().showAddressBar())
         break
       case 'webui-focus-addressbar':
-        const activeTab = this.tabs().find(t => t.active)
+        const activeTab = this.tabs().find((t) => t.active())
         if (!activeTab || activeTab.url === this.settingsUrl) return
 
-        // TODO
-        //this.tryShowToolbar(true)
-        //if (this.showToolbar())
-          // TODO: MVVM-ify this somehow?
-          document.getElementById('addressurl').select()
+        // TODO: MVVM-ify this somehow?
+        document.getElementById('addressurl').select()
         break
       default:
         alert('webui.js received unknown webui-message type from main:\n' + JSON.stringify(msg))
@@ -161,13 +231,13 @@ class WebUI {
         return this.sendToMain(msg.type, msg.data)
       case 'set-config-item':
         const result = await this.sendToMain(msg.type, msg.data)
-        if (msg.data.key == 'window.style.theme')
-          this.theme(msg.data.value)
-        if (msg.data.key == 'window.style.brightness')
-          this.brightness(msg.data.value)
+        if (msg.data.key == 'window.style.theme') this.theme(msg.data.value)
+        if (msg.data.key == 'window.style.brightness') this.brightness(msg.data.value)
         return result
       default:
-        throw new Error(`webui.js received unknown message type from renderer:\n${JSON.stringify(msg)}`)
+        throw new Error(
+          `webui.js received unknown message type from renderer:\n${JSON.stringify(msg)}`,
+        )
     }
   }
 
@@ -175,7 +245,7 @@ class WebUI {
     return await ipc.send('webui-message', type, data)
   }
 
-  browserEventTabMouseDown(tab, ev) {
+  tabMouseDown(tab, ev) {
     if (ev.button === 1 && tab.url != this.settingsUrl) this.closingTabId = tab.id
     else this.closingTabId = -1
 
@@ -183,12 +253,19 @@ class WebUI {
       this.heldTabId = tab.id
     }
   }
-  browserEventTabMouseMove(tab, ev) {
+  tabMouseMove(tab, ev) {
+    if (this.hoveringTabId != tab.id) {
+      this.hoveringTabId = tab.id
+      this.updateTabSeparators(this.tabs())
+    }
     if (this.heldTabId == -1 || tab.url == this.settingsUrl) return
   }
-  browserEventTabMouseUp(tab, ev) {
-    if (ev.button === 1 && this.closingTabId == tab.id)
-      chrome.tabs.remove(tab.id)
+  tabMouseOut(tab, ev) {
+    this.hoveringTabId = -1
+    this.updateTabSeparators(this.tabs())
+  }
+  tabMouseUp(tab, ev) {
+    if (ev.button === 1 && this.closingTabId == tab.id) chrome.tabs.remove(tab.id)
     else if (ev.button === 0 && this.heldTabId == tab.id) {
       chrome.tabs.update(tab.id, { active: true })
       this.heldTabId = -1
@@ -196,17 +273,37 @@ class WebUI {
     return true
   }
 
-  browserActionNewTab() { chrome.tabs.create() }
-  browserActionGoBack() { chrome.tabs.goBack() }
-  browserActionGoForward() { chrome.tabs.goForward() }
-  browserActionReload() { chrome.tabs.reload() }
+  browserActionNewTab() {
+    chrome.tabs.create()
+  }
+  browserActionGoBack() {
+    chrome.tabs.goBack()
+  }
+  browserActionGoForward() {
+    chrome.tabs.goForward()
+  }
+  browserActionReload() {
+    chrome.tabs.reload()
+  }
   browserActionCloseTab(tab, ev) {
     chrome.tabs.remove(tab.id)
     return true
   }
-  browserActionAddressKeyDown(event) {
-    if (!['Enter', 'NumpadEnter'].includes(event.code)) return
-    // TODO: etc
+  browserActionAddressKeyDown(data, event) {
+    event = event.originalEvent
+    if (!['Enter', 'NumpadEnter'].includes(event.code)) return true
+    let url = this.activeTab().urlInput()
+    if (url.toLowerCase() == this.settingsUrl.toLowerCase()) return
+    if (event.ctrlKey) {
+      const shouldComplete = /^\w[\w\d-]+$/.test(url)
+      //console.log('trying to complete url', url, shouldComplete)
+      if (shouldComplete) {
+        //console.log('completing url.')
+        url = `https://${url}.com/`
+      }
+    }
+    chrome.tabs.update({ url })
+    return false
   }
   browserActionAddressBlur(event) {
     // TODO: MVVM-ify this somehow?
@@ -214,13 +311,13 @@ class WebUI {
   }
 
   async windowActionMinimize() {
-    const win = await this.getWindow()
+    const win = await this.getCurrentWindow()
     const state = win.state === 'minimized' ? 'normal' : 'minimized'
     chrome.windows.update(win.id, { state })
     this.windowState(state)
   }
   async windowActionMaximize() {
-    const win = await this.getWindow()
+    const win = await this.getCurrentWindow()
     // when restoring from minimized state, the state value isn't updated immediately
     const state = ['maximized', 'minimized'].includes(win.state) ? 'normal' : 'maximized'
     chrome.windows.update(win.id, { state })
@@ -230,14 +327,17 @@ class WebUI {
     chrome.windows.remove()
   }
 
-  
-  async getWindow() { return this.getWindow(chrome.windows.WINDOW_ID_CURRENT) }
-  async getWindow(windowId) {
-    return new Promise(resolve => chrome.windows.get(windowId, resolve))
+  async getCurrentWindow() {
+    return this.getWindow(chrome.windows.WINDOW_ID_CURRENT)
   }
-  async getTabs() { return this.getTabs(chrome.windows.WINDOW_ID_CURRENT) }
+  async getWindow(windowId) {
+    return new Promise((resolve) => chrome.windows.get(windowId, resolve))
+  }
+  async getCurrentTabs() {
+    return this.getTabs(chrome.windows.WINDOW_ID_CURRENT)
+  }
   async getTabs(windowId) {
-    return new Promise(resolve => chrome.tabs.query(windowId, resolve))
+    return new Promise((resolve) => chrome.tabs.query(windowId, resolve))
   }
 }
 window.vm = new WebUI()

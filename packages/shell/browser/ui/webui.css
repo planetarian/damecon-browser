@@ -279,15 +279,9 @@ ul {
   box-shadow: 0px 0px 4px 0px #0000007f;
 }
 
-.tab-container.tab-position-before::after,
-.tab-container.tab-position-after::after {
+.tab-container.tab-separator-right::after {
   top: 8px;
   bottom: 5px;
-}
-.tab-container.tab-position-before::after {
-  border-left: 1px solid #ffffff3f;
-}
-.tab-container.tab-position-after::after {
   border-right: 1px solid #ffffff3f;
 }
 
