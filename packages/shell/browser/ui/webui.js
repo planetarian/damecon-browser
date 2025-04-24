@@ -183,6 +183,10 @@ class WebUI {
       if (!this.tabs().some((t) => t.id == tabId)) return
       this.renderTabs()
     })
+    chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
+      if (!this.tabs().some((t) => t.id == tabId)) return
+      this.renderTabs()
+    })
   }
 
   async sendTopbarSize() {
