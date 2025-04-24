@@ -26,11 +26,15 @@ export class DownloadsAPI {
     const directory = path.join(downloads, ...filePath)
     console.log('directory', directory)
     console.log('filename', filename)
-    const win = BrowserWindow.getFocusedWindow() as BrowserWindow
-    download(win, details.url, {
-      saveAs: true,
-      directory,
-      filename,
-    })
+    const win = BrowserWindow.fromWebContents(event.sender) as BrowserWindow
+    try {
+      download(win, details.url, {
+        saveAs: true,
+        directory,
+        filename,
+      })
+    } catch (error) {
+      console.error(error)
+    }
   }
 }
