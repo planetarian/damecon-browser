@@ -453,12 +453,16 @@ class Browser {
           }
           break
         case 'get-should-hide-addressbar':
-          const sites = configStore
-            .get('window.view.hideAddressBarSites')
-            .map((site) =>
-              site.replace('{{kc3-extension}}', `chrome-extension://${kc3ExtensionId}`),
-            )
-          result = isMatch(data.url, sites)
+          if (this.forceShowToolbar) {
+            result = false
+          } else {
+            const sites = configStore
+              .get('window.view.hideAddressBarSites')
+              .map((site) =>
+                site.replace('{{kc3-extension}}', `chrome-extension://${kc3ExtensionId}`),
+              )
+            result = isMatch(data.url, sites)
+          }
           break
         case 'kc3-doupdate':
           await this.updateKc3(configStore.get('kc3kai.update.channel'))
@@ -477,7 +481,6 @@ class Browser {
           win.tabs.updateLayout(data.height)
           break
         case 'webui-display-mode-changed':
-          console.log('display mode changed', data)
           win.tabs.updateLayout(data.height)
           break
         case 'webui-close-tab':
@@ -790,6 +793,17 @@ class Browser {
     if (leave) {
       tab.destroy()
     }
+  }
+
+  forceShowToolbar = false
+  renderToolbar(tabId) {
+    const win = this.windows.find((w) => w.tabs.tabList.some((t) => t.id == tabId))
+    const tab = win.tabs.tabList.find((t) => t.id == tabId)
+    this.forceShowToolbar = !this.forceShowToolbar
+    win.webContents.send('webui-message', {
+      type: 'webui-render-toolbar',
+      data: { forceShow: this.forceShowToolbar },
+    })
   }
 
   getKc3Path() {

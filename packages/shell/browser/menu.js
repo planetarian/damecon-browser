@@ -70,6 +70,12 @@ const setupMenu = (browser) => {
           nonNativeMacOSRole: true,
           click: () => tabWc().toggleDevTools(),
         },
+        {
+          label: 'Show toolbar',
+          accelerator: 'Alt+T',
+          nonNativeMacOSRole: true,
+          click: () => browser.renderToolbar(tab().id),
+        },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
