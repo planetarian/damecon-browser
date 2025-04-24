@@ -192,7 +192,6 @@ class WebUI {
 
     this.renderTabs()
 
-    console.log('>> activeTab:', activeTab)
     if (activeTab) {
       this.setActiveTab(activeTab)
     }
@@ -229,24 +228,20 @@ class WebUI {
     })
 
     chrome.tabs.onActivated.addListener((activeInfo) => {
-      console.log('>> chrome.tabs.onActivated', activeInfo)
       if (activeInfo.windowId !== this.windowId) return
 
       this.setActiveTab(activeInfo)
     })
 
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, details) => {
-      console.log('>> chrome.tabs.onUpdated', tabId, details)
       const tab = findTab(tabId)
       if (!tab) return
       Object.assign(tab, details)
-      if (tab.active) {
-        this.setActiveTab(tab)
-      } else this.renderTabs()
+      this.renderTab(tab)
+      if (tab.active) this.renderToolbar()
     })
 
     chrome.tabs.onRemoved.addListener((tabId) => {
-      console.log('>> chrome.tabs.onRemoved', tabId)
       const tabIndex = this.tabList.findIndex((tab) => tab.id === tabId)
       if (tabIndex > -1) {
         this.tabList.splice(tabIndex, 1)
@@ -256,11 +251,18 @@ class WebUI {
   }
 
   setActiveTab(activeTab) {
-    console.log('>> setting active tab', activeTab)
-    this.activeTabId = activeTab?.id || activeTab?.tabId
-    this.windowId = activeTab?.windowId || this.windowId
+    const tabId = activeTab?.id || activeTab?.tabId
+    console.log('>> setting active tab', tabId)
+    if (this.activeTabId == tabId) {
+      const tab = this.tabList.find((tab) => tab.id === tabId)
+      this.renderTab(tab)
+    } else {
+      this.activeTabId = tabId
+      this.windowId = activeTab?.windowId || this.windowId
 
-    this.renderTabs()
+      this.renderTabs()
+    }
+    this.renderToolbar()
   }
 
   onAddressUrlKeyPress(event) {
@@ -271,7 +273,7 @@ class WebUI {
   }
 
   createTabNode(tab) {
-    console.log('>> creating tab node', tab)
+    console.log('>> creating tab node', tab.id)
     const tabElem = this.$.tabTemplate.content.cloneNode(true).firstElementChild
     tabElem.dataset.tabId = tab.id
 
@@ -337,34 +339,25 @@ class WebUI {
   renderTabs() {
     console.log('>> rendering tabs')
     let activeFound = this.activeTabId == -1
-    let activeTab
-
-    console.log('activeTabId', this.activeTabId)
-    console.log('activeFound', activeFound)
 
     for (let i = 0; i < this.tabList.length; i++) {
       const tab = this.tabList[i]
       const isActiveTab = tab.id === this.activeTabId
-      console.log('tab', tab)
-      console.log('isActiveTab', isActiveTab)
       if (this.activeTabId && isActiveTab) {
-        console.log('activating tab')
+        console.log('  >> activating tab', tab.id)
         tab.active = true
-        activeTab = tab
       } else {
-        console.log('deactivating tab')
+        console.log('  >> deactivating tab', tab.id)
         tab.active = false
       }
       activeFound = tab.active || activeFound
-      console.log('activeFound', activeFound)
       if (!tab.active && i > 0) tab.tabPosition = activeFound ? 'after' : 'before'
       this.renderTab(tab)
     }
-    this.renderToolbar()
   }
 
   renderTab(tab) {
-    console.log('rendering tab', tab)
+    console.log('>> rendering tab', tab.id)
     let tabElem = this.$.tabList.querySelector(`[data-tab-id="${tab.id}"]`)
     if (!tabElem) tabElem = this.createTabNode(tab)
 
@@ -405,7 +398,7 @@ class WebUI {
       console.error('no tab to render toolbar for.')
       return
     }
-    console.log('rendering toolbar for tab', tab)
+    console.log('>> rendering toolbar for tab', tab.id)
     this.$.addressUrl.value = tab?.url
 
     let hideBar = false

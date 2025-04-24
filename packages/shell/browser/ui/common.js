@@ -6,7 +6,7 @@
 const sendMessage = function (type, data) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ type, data }, (response) => {
-      console.log('received response: ', response)
+      console.log(`received response to ${type}: `, response)
       if (response?.complete) {
         resolve(response.result)
       } else {

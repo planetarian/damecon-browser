@@ -183,14 +183,10 @@ class TabbedBrowserWindow {
     queueMicrotask(async () => {
       await this.applyProxy()
 
-      const settingsTab = this.tabs.create({ initialUrl: settingsUrl })
-      this.tabs.select(settingsTab.id)
-
-      /*if (options.initialUrl) {
-        // Create initial tab
-        const tab = this.tabs.create(options)
-        //tab.loadURL(options.initialUrl)
-      }*/
+      for (const url in options.initialUrls) {
+        const settingsTab = this.tabs.create({ initialUrl: url })
+        this.tabs.select(settingsTab.id)
+      }
     })
   }
 
@@ -427,70 +423,6 @@ class Browser {
       }
     })
 
-    // Messages from webui/settings
-    ipcMain.handle('webui-message', async (ev, type, data) => {
-      console.log('main.js received message from webui.js', type, data)
-
-      let result
-      switch (type) {
-        case 'get-config-item':
-          result = configStore.get(data.key)
-          break
-        case 'get-config':
-          result = configStore.all
-          break
-        case 'set-config-item':
-          result = configStore.set(data.key, data.value)
-          if (data.key.startsWith('proxy.client.')) await win.applyProxy()
-          else if (data.key == 'kc3kai.update.channel') {
-            if (kc3ExtensionId) this.session.removeExtension(kc3ExtensionId)
-            await this.updateKc3IfScheduled(win)
-          } else if (data.key === 'window.style.brightness') {
-            nativeTheme.themeSource = data.value
-          } else if (data.key.startsWith('kc3kai.custom')) {
-            const kc3Path = this.getKc3Path()
-            await this.checkStartKc3(win, kc3Path)
-          }
-          break
-        case 'get-should-hide-addressbar':
-          if (this.forceShowToolbar) {
-            result = false
-          } else {
-            const sites = configStore
-              .get('window.view.hideAddressBarSites')
-              .map((site) =>
-                site.replace('{{kc3-extension}}', `chrome-extension://${kc3ExtensionId}`),
-              )
-            result = isMatch(data.url, sites)
-          }
-          break
-        case 'kc3-doupdate':
-          await this.updateKc3(configStore.get('kc3kai.update.channel'))
-          break
-        case 'kc3-get-isupdating':
-          result = { isUpdating: this.kc3IsUpdating, channel: this.kc3UpdatingChannel }
-          break
-        case 'kc3-select-custom-location':
-          const { canceled, filePaths } = await dialog.showOpenDialog({
-            properties: ['openDirectory'],
-          })
-          result = { canceled, filePaths }
-          break
-        case 'webui-zoom-changed':
-          console.log('zoom changed', data)
-          win.tabs.updateLayout(data.height)
-          break
-        case 'webui-display-mode-changed':
-          win.tabs.updateLayout(data.height)
-          break
-        case 'webui-close-tab':
-          console.log('clicked tab X', data)
-          this.confirmCloseTab(data.tabId)
-          break
-      }
-      return result
-    })
-
     // extension containing window chrome UI
     const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id
@@ -557,11 +489,77 @@ class Browser {
     settingsUrl = webuiBase + '/settings.html'
     console.log('>> main: now creating window...')
     const win = this.createTabbedWindow({
-      initialUrls: [settingsUrl],
+      initialUrls: [],
       hideAddressBarFor: [settingsUrl],
     })
 
-    //this.createInitialWindow()
+    // Messages from webui/settings
+    ipcMain.handle('webui-message', async (ev, type, data) => {
+      console.log('main.js received message from webui.js', type, data)
+
+      let result
+      switch (type) {
+        case 'get-config-item':
+          result = configStore.get(data.key)
+          break
+        case 'get-config':
+          result = configStore.all
+          break
+        case 'set-config-item':
+          result = configStore.set(data.key, data.value)
+          if (data.key.startsWith('proxy.client.')) await win.applyProxy()
+          else if (data.key == 'kc3kai.update.channel') {
+            if (kc3ExtensionId) this.session.removeExtension(kc3ExtensionId)
+            await this.updateKc3IfScheduled(win)
+          } else if (data.key === 'window.style.brightness') {
+            nativeTheme.themeSource = data.value
+          } else if (data.key.startsWith('kc3kai.custom')) {
+            const kc3Path = this.getKc3Path()
+            await this.checkStartKc3(win, kc3Path)
+          }
+          break
+        case 'get-should-hide-addressbar':
+          if (this.forceShowToolbar) {
+            result = false
+          } else {
+            const sites = configStore
+              .get('window.view.hideAddressBarSites')
+              .map((site) =>
+                site.replace('{{kc3-extension}}', `chrome-extension://${kc3ExtensionId}`),
+              )
+            result = isMatch(data.url, sites)
+          }
+          break
+        case 'kc3-doupdate':
+          await this.updateKc3(configStore.get('kc3kai.update.channel'))
+          break
+        case 'kc3-get-isupdating':
+          result = { isUpdating: this.kc3IsUpdating, channel: this.kc3UpdatingChannel }
+          break
+        case 'kc3-select-custom-location':
+          const { canceled, filePaths } = await dialog.showOpenDialog({
+            properties: ['openDirectory'],
+          })
+          result = { canceled, filePaths }
+          break
+        case 'webui-zoom-changed':
+          console.log('zoom changed', data)
+          win.tabs.updateLayout(data.height)
+          break
+        case 'webui-display-mode-changed':
+          win.tabs.updateLayout(data.height)
+          break
+        case 'webui-close-tab':
+          console.log('clicked tab X', data)
+          this.confirmCloseTab(data.tabId)
+          break
+      }
+      return result
+    })
+
+    const settingsTab = win.tabs.create({ initialUrl: settingsUrl })
+    win.tabs.select(settingsTab.id)
+
     this.resolveReady()
 
     // set up kc3 update worker thread

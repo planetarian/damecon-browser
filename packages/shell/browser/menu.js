@@ -71,8 +71,8 @@ const setupMenu = (browser) => {
           click: () => tabWc().toggleDevTools(),
         },
         {
-          label: 'Show toolbar',
-          accelerator: 'Alt+T',
+          label: 'Show Addressbar',
+          accelerator: 'Alt+A',
           nonNativeMacOSRole: true,
           click: () => browser.renderToolbar(tab().id),
         },
