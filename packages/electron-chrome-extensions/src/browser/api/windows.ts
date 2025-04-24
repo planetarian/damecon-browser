@@ -4,7 +4,10 @@ import debug from 'debug'
 
 const d = debug('electron-chrome-extensions:windows')
 
-const getWindowState = (win: Electron.BaseWindow): chrome.windows.Window['state'] => {
+const getWindowState = (
+  win: Electron.BrowserWindow,
+  //.BaseWindow // Electron 35
+): chrome.windows.Window['state'] => {
   if (win.isMaximized()) return 'maximized'
   if (win.isMinimized()) return 'minimized'
   if (win.isFullScreen()) return 'fullscreen'
@@ -51,7 +54,10 @@ export class WindowsAPI {
     d(`Observing window[${windowId}]`)
   }
 
-  private createWindowDetails(win: Electron.BaseWindow) {
+  private createWindowDetails(
+    win: Electron.BrowserWindow,
+    //.BaseWindow // Electron 35
+  ) {
     const details: Partial<chrome.windows.Window> = {
       id: win.id,
       focused: win.isFocused(),
@@ -77,7 +83,10 @@ export class WindowsAPI {
     return details
   }
 
-  private getWindowDetails(win: Electron.BaseWindow) {
+  private getWindowDetails(
+    win: Electron.BrowserWindow,
+    //.BaseWindow // Electron 35
+  ) {
     if (this.ctx.store.windowDetailsCache.has(win.id)) {
       return this.ctx.store.windowDetailsCache.get(win.id)
     }

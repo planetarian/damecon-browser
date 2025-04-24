@@ -14,7 +14,7 @@ export interface PopupAnchorRect {
 interface PopupViewOptions {
   extensionId: string
   session: Session
-  parent: Electron.BaseWindow
+  parent: Electron.BrowserWindow // BaseWindow // Electron 35
   url: string
   anchorRect: PopupAnchorRect
   alignment?: string
@@ -36,7 +36,7 @@ export class PopupView {
   }
 
   browserWindow?: BrowserWindow
-  parent?: Electron.BaseWindow
+  parent?: Electron.BrowserWindow // BaseWindow // Electron 35
   extensionId: string
 
   private anchorRect: PopupAnchorRect
@@ -58,7 +58,7 @@ export class PopupView {
     this.browserWindow = new BrowserWindow({
       show: false,
       frame: false,
-      parent: opts.parent,
+      parent: opts.parent as BrowserWindow, // Electron 35
       movable: false,
       maximizable: false,
       minimizable: false,

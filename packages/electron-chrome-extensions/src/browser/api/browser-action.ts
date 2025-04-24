@@ -165,7 +165,7 @@ export class BrowserActionAPI {
     handle(
       'browserAction.addObserver',
       (event) => {
-        if (event.type != 'frame') return
+        //if (event.type != 'frame') return
         const observer = event.sender
         this.observers.add(observer)
         observer.once?.('destroyed', () => {
@@ -177,7 +177,7 @@ export class BrowserActionAPI {
     handle(
       'browserAction.removeObserver',
       (event) => {
-        if (event.type != 'frame') return
+        //if (event.type != 'frame') return
         const { sender: observer } = event
         this.observers.delete(observer)
       },
@@ -363,8 +363,8 @@ export class BrowserActionAPI {
     return { activeTabId: activeTab?.id, actions }
   }
 
-  private activate({ type, sender }: ExtensionEvent, details: ActivateDetails) {
-    if (type != 'frame') return
+  private activate({ sender }: ExtensionEvent, details: ActivateDetails) {
+    //if (type != 'frame') return
     const { eventType, extensionId, tabId } = details
 
     d(

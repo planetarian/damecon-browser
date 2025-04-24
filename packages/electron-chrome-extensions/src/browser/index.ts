@@ -188,6 +188,7 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     const preloadPath = resolvePreloadPath(modulePath)
 
+    /*
     if ('registerPreloadScript' in session) {
       session.registerPreloadScript({
         id: 'crx-mv2-preload',
@@ -200,9 +201,10 @@ export class ElectronChromeExtensions extends EventEmitter {
         filePath: preloadPath,
       })
     } else {
-      // @ts-expect-error Deprecated electron@<35
-      session.setPreloads([...session.getPreloads(), preloadPath])
-    }
+      */
+    // // @ts-expect-error Deprecated electron@<35
+    session.setPreloads([...session.getPreloads(), preloadPath])
+    //} // Electron 35
 
     if (!existsSync(preloadPath)) {
       console.error(
@@ -223,7 +225,11 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   /** Add webContents to be tracked as a tab. */
-  addTab(tab: Electron.WebContents, window: Electron.BaseWindow) {
+  addTab(
+    tab: Electron.WebContents,
+    window: Electron.BrowserWindow,
+    //.BrowserWindow // Electron 35
+  ) {
     this.checkWebContentsArgument(tab)
     this.ctx.store.addTab(tab, window)
   }

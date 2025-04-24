@@ -715,29 +715,23 @@ class Browser {
         case 'background-tab':
         case 'new-window': {
           console.log('>> main: webContents.setWindowOpenHandler()', details.disposition)
-          return {
-            action: 'allow',
-            outlivesOpener: true,
-            createWindow: (options) => {
-              const { webContents: guest, webPreferences } = options
-              console.log('>> main: creating window', details, guest)
-              const win = this.getWindowFromWebContents(webContents)
-              console.log('>> main: creating tab', details, guest)
-              const opts = {}
-              if (guest) opts.webContents = guest
-              if (webPreferences) opts.webPreferences = webPreferences
-              const tab = win.tabs.create(opts)
-              let ogurl = details.url
-              tab.loadURL(details.url)
-              if (
-                (details.url == kc3StartPageUrl || ogurl == DMMPageUrl) &&
-                config.get('kc3kai.startup.openDevtools')
-              ) {
-                tab.webContents.openDevTools({ activate: true })
-              }
-              return tab.webContents
-            },
-          }
+          queueMicrotask(() => {
+            console.log('>> main: creating window', details)
+            const win = this.getWindowFromWebContents(webContents)
+            if (!win) return
+            const opts = {}
+            const tab = win.tabs.create(opts)
+            let ogurl = details.url
+            tab.loadURL(details.url)
+            if (
+              (details.url == kc3StartPageUrl || ogurl == DMMPageUrl) &&
+              config.get('kc3kai.startup.openDevtools')
+            ) {
+              tab.webContents.openDevTools({ activate: true })
+            }
+          })
+
+          return { action: 'deny' }
         }
         default:
           return { action: 'allow' }
