@@ -12,6 +12,7 @@ import {
   dialog,
 } from 'electron'
 import ConfigStore from 'configstore'
+import { configSchema, populateConfigDefaults } from './ui/config-utils.js'
 
 // These two break if using import syntax...?
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
@@ -27,41 +28,12 @@ import kc3UpdateWorker from 'worker-loader!./workers/kc3update-worker.js'
 import { setTimeout } from 'timers/promises'
 import { debug } from 'console'
 
-const defaultConfig = {
-  window: {
-    state: {
-      width: 1200,
-      height: 800,
-    },
-    style: {
-      theme: 'andra',
-      brightness: 'system',
-    },
-    view: {
-      hideActionBarSites: ['http://www.dmm.com/netgame/social/-/gadgets/=/app_id=854854/'],
-    },
-  },
-  kc3kai: {
-    startup: {
-      gamePage: 'kc3',
-      openDevtools: true,
-      openStratRoom: true,
-    },
-    update: {
-      channel: 'release',
-      schedule: 'daily',
-      auto: true,
-    },
-  },
-  proxy: {
-    client: {
-      host: '127.0.0.1',
-      port: 8081,
-      enable: false,
-    },
-  },
-}
-const config = new ConfigStore('damecon-browser', defaultConfig, { globalConfigPath: true })
+import { isMatch } from 'matcher'
+
+const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
+const cfg = configStore.all
+populateConfigDefaults(cfg)
+configStore.all = cfg // save with updated defaults
 
 app.commandLine.appendSwitch('force-gpu-mem-available-mb', '10000')
 app.commandLine.appendSwitch('force-gpu-rasterization')
@@ -224,7 +196,7 @@ class TabbedBrowserWindow {
 
   initTabs(options) {
     const self = this
-    const tabsOpts = { newTabPageUrl: newTabUrl, hideAddressBarFor: options.hideAddressBarFor }
+    const tabsOpts = { newTabPageUrl: newTabUrl }
     console.log('>> main: loading tabs', tabsOpts)
     this.tabs = new Tabs(this.window, tabsOpts)
 
@@ -240,7 +212,7 @@ class TabbedBrowserWindow {
       console.log(">> main.tabs.on('tab-navigated', tabsOpts)")
       if (
         (tabUrl === kc3StartPageUrl || tabUrl === DMMPageUrl) &&
-        config.get('kc3kai.startup.openDevtools')
+        configStore.get('kc3kai.startup.openDevtools')
       ) {
         tab.webContents.openDevTools({ activate: true })
       }
@@ -305,10 +277,10 @@ class TabbedBrowserWindow {
   }
 
   async applyProxy() {
-    const enable = config.get('proxy.client.enable')
+    const enable = configStore.get('proxy.client.enable')
     if (enable) {
-      const host = config.get('proxy.client.host')
-      const port = config.get('proxy.client.port')
+      const host = configStore.get('proxy.client.host')
+      const port = configStore.get('proxy.client.port')
       const data = this.generatePac(host, port)
       const pacData =
         'data:application/x-ns-proxy-autoconfig;base64,' +
@@ -462,13 +434,13 @@ class Browser {
       let result
       switch (type) {
         case 'get-config-item':
-          result = config.get(data.key)
+          result = configStore.get(data.key)
           break
         case 'get-config':
-          result = config.all
+          result = configStore.all
           break
         case 'set-config-item':
-          result = config.set(data.key, data.value)
+          result = configStore.set(data.key, data.value)
           if (data.key.startsWith('proxy.client.')) await win.applyProxy()
           else if (data.key == 'kc3kai.update.channel') {
             if (kc3ExtensionId) this.session.removeExtension(kc3ExtensionId)
@@ -480,8 +452,16 @@ class Browser {
             await this.checkStartKc3(win, kc3Path)
           }
           break
+        case 'get-should-hide-addressbar':
+          const sites = configStore
+            .get('window.view.hideAddressBarSites')
+            .map((site) =>
+              site.replace('{{kc3-extension}}', `chrome-extension://${kc3ExtensionId}`),
+            )
+          result = isMatch(data.url, sites)
+          break
         case 'kc3-doupdate':
-          await this.updateKc3(config.get('kc3kai.update.channel'))
+          await this.updateKc3(configStore.get('kc3kai.update.channel'))
           break
         case 'kc3-get-isupdating':
           result = { isUpdating: this.kc3IsUpdating, channel: this.kc3UpdatingChannel }
@@ -562,7 +542,7 @@ class Browser {
     )
 
     // theme handling
-    const bright = config.get('window.style.brightness') || 'system'
+    const bright = configStore.get('window.style.brightness') || 'system'
     nativeTheme.themeSource = bright
     nativeTheme.on('updated', (ev) => {
       console.log('nativeTheme.updated', ev)
@@ -617,7 +597,7 @@ class Browser {
             }
             const channel = this.kc3UpdatingChannel
             if (!channel.startsWith('custom'))
-              await config.set('kc3kai.update.time.' + channel, Date.now())
+              configStore.set('kc3kai.update.time.' + channel, Date.now())
             await this.checkStartKc3(win, kc3Path)
           }
           break
@@ -655,15 +635,15 @@ class Browser {
 
   createTabbedWindow(options) {
     console.log('>> main.createWindow()')
-    const windowState = config.get('window.state')
+    const windowState = configStore.get('window.state')
 
     const win = new TabbedBrowserWindow({
       ...options,
       urls: this.urls,
       extensions: this.extensions,
       window: {
-        width: windowState?.width || defaultConfig.window.state.width,
-        height: windowState?.height || defaultConfig.window.state.height,
+        width: windowState?.width || configSchema.window.state.width.default,
+        height: windowState?.height || configSchema.window.state.height.default,
         frame: false,
         titleBarStyle: 'hidden',
         // remove the min/max/close buttons so we can theme them
@@ -690,8 +670,12 @@ class Browser {
       })
       if (win.window.isMaximized()) return
       const size = win.window.getSize()
-      config.set('window.state.width', size[0])
-      config.set('window.state.height', size[1])
+      try {
+        configStore.set('window.state.width', size[0])
+        configStore.set('window.state.height', size[1])
+      } catch (error) {
+        console.error('Failed to set window.state values during resize.')
+      }
     })
     this.windows.push(win)
 
@@ -735,7 +719,7 @@ class Browser {
             tab.loadURL(details.url)
             if (
               (details.url == kc3StartPageUrl || ogurl == DMMPageUrl) &&
-              config.get('kc3kai.startup.openDevtools')
+              configStore.get('kc3kai.startup.openDevtools')
             ) {
               tab.webContents.openDevTools({ activate: true })
             }
@@ -809,21 +793,21 @@ class Browser {
   }
 
   getKc3Path() {
-    const currentChannel = config.get('kc3kai.update.channel')
+    const currentChannel = configStore.get('kc3kai.update.channel')
     let kc3Path
     if (currentChannel.startsWith('custom'))
-      kc3Path = config.get(`kc3kai.${currentChannel}Location`)
+      kc3Path = configStore.get(`kc3kai.${currentChannel}Location`)
     else kc3Path = path.join(PATHS.KC3_EXTENSIONS, 'kc3kai-' + currentChannel)
     return kc3Path
   }
 
   async updateKc3IfScheduled(win) {
     // update if configured schedule warrants it
-    const currentChannel = config.get('kc3kai.update.channel')
+    const currentChannel = configStore.get('kc3kai.update.channel')
     const canUpdate = !currentChannel.startsWith('custom')
-    const lastUpdated = config.get('kc3kai.update.time.' + currentChannel)
-    const schedule = config.get('kc3kai.update.schedule')
-    const autoUpdate = config.get('kc3kai.update.auto')
+    const lastUpdated = configStore.get('kc3kai.update.time.' + currentChannel)
+    const schedule = configStore.get('kc3kai.update.schedule')
+    const autoUpdate = configStore.get('kc3kai.update.auto')
     const scheduleMap = {
       startup: 0,
       daily: 1,
@@ -887,16 +871,16 @@ class Browser {
       let startTab
 
       // TODO: remove cases for old config keys
-      if (config.get('kc3kai.startup.openStartPage')) {
-        config.delete('kc3kai.startup.openStartPage')
-        config.set('kc3kai.startup.gamePage', 'kc3')
+      if (configStore.get('kc3kai.startup.openStartPage')) {
+        configStore.delete('kc3kai.startup.openStartPage')
+        configStore.set('kc3kai.startup.gamePage', 'kc3')
       }
-      if (config.get('kc3kai.startup.openDMMPage')) {
-        config.delete('kc3kai.startup.openDMMPage')
-        config.set('kc3kai.startup.gamePage', 'dmm')
+      if (configStore.get('kc3kai.startup.openDMMPage')) {
+        configStore.delete('kc3kai.startup.openDMMPage')
+        configStore.set('kc3kai.startup.gamePage', 'dmm')
       }
 
-      switch (config.get('kc3kai.startup.gamePage')) {
+      switch (configStore.get('kc3kai.startup.gamePage')) {
         case 'kc3':
           startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
           break
@@ -907,7 +891,7 @@ class Browser {
 
       const kc3StratRoomUrl =
         'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
-      if (config.get('kc3kai.startup.openStratRoom')) {
+      if (configStore.get('kc3kai.startup.openStratRoom')) {
         const stratRoomTab = win.tabs.create({ initialUrl: kc3StratRoomUrl })
         startTab = startTab || stratRoomTab
       }

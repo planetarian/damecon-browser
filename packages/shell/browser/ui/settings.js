@@ -18,35 +18,42 @@ function ViewModel() {
       //faIcon: 'fa-solid fa-circle-nodes'
     },
   ]
+  self.config = {}
 
   self.selectConfigPage = function (item) {
     self.selectedConfigPage(item.id)
   }
 
-  self.settingsApply = async function (callback) {
-    for (let [groupKey, group] of Object.entries(self.settings)) {
-      for (let [key, details] of Object.entries(self.settings[groupKey])) {
-        await callback(key, details)
-      }
-    }
-  }
-  self.settingsApplySync = function (callback) {
-    for (let [groupKey, group] of Object.entries(self.settings)) {
-      for (let [key, details] of Object.entries(self.settings[groupKey])) {
-        callback(key, details)
-      }
-    }
-  }
-
+  // loads values from the current config into ko properties
   self.fetchConfig = async function () {
     const config = await configStore.all()
-    self.settingsApplySync((key, details) => self[key](access(config, details.path)))
+    configApplySync(config, (path, config, key, keySchema) => {
+      let value = config[key]
+      if (Array.isArray(value)) {
+        for (let i = 0; i < value.length; i++) {
+          value[i] = ko.observable(value[i])
+          value[i].subscribe((newValue) => {
+            if (!self.settingsInitialized()) return
+            console.log('setting changed', `${path}[${i}]`, newValue)
+            configStore.set(
+              path,
+              value.map((v) => v()),
+            )
+          })
+        }
+      }
+      access(self.config, path)(value)
+    })
     self.settingsInitialized(true)
   }
+
+  // updates the config from ko properties
   self.saveConfig = async function () {
-    await self.settingsApply(
-      async (key, details) => await configStore.set(details.path, self[key]()),
-    )
+    await configApply(self.config, async (path, config, key, keySchema) => {
+      let value = config[key]
+      if (Array.isArray(value)) value = value.map((v) => v())
+      await configStore.set(path, value)
+    })
   }
 
   self.kc3CheckForUpdates = async function () {
@@ -56,68 +63,27 @@ function ViewModel() {
   self.selectedConfigPage = ko.observable(0)
 
   // This sets up the mappings between knockout properties and config keys.
-  self.settings = {
-    window: {
-      windowStyleTheme: {
-        path: 'window.style.theme',
-        type: 'option',
-        options: ['andra', 'daybreak', 'savatieri', 'taiha', 'zuiun'],
-      },
-      windowStyleBrightness: {
-        path: 'window.style.brightness',
-        type: 'option',
-        options: ['system', 'light', 'dark'],
-      },
-      windowHideAddressBarSites: { path: 'window.view.hideAddressBarSites', type: 'array' },
-    },
-    kc3kai: {
-      kc3GamePage: {
-        path: 'kc3kai.startup.gamePage',
-        type: 'option',
-        options: ['none', 'kc3', 'dmm'],
-      },
-      kc3OpenStartPage: { path: 'kc3kai.startup.openStartPage', type: 'bool' }, // TODO: remove
-      kc3OpenDMMPage: { path: 'kc3kai.startup.openDMMPage', type: 'bool' }, // TODO: remove
-      kc3OpenDevtools: { path: 'kc3kai.startup.openDevtools', type: 'bool' },
-      kc3OpenStratRoom: { path: 'kc3kai.startup.openStratRoom', type: 'bool' },
-      kc3UpdateChannel: {
-        path: 'kc3kai.update.channel',
-        type: 'option',
-        options: ['release', 'master', 'develop', 'custom1', 'custom2'],
-      },
-      kc3Custom1Location: { path: 'kc3kai.custom1Location', type: 'string' },
-      kc3Custom2Location: { path: 'kc3kai.custom2Location', type: 'string' },
-      kc3UpdateSchedule: {
-        path: 'kc3kai.update.schedule',
-        type: 'option',
-        options: ['startup', 'daily', 'weekly', 'manual'],
-      },
-      kc3UpdateAuto: { path: 'kc3kai.update.auto', type: 'bool' },
-    },
-    proxy: {
-      proxyClientHost: { path: 'proxy.client.host', type: 'string' },
-      proxyClientPort: { path: 'proxy.client.port', type: 'number' },
-      proxyClientEnable: { path: 'proxy.client.enable', type: 'bool' },
-    },
-  }
   self.settingsInitialized = ko.observable(false)
 
   self.processes = ko.observableArray([])
 
-  // initialize viewmodel items
-  self.settingsApplySync((key, details) => {
-    self[key] = details.type == 'array' ? ko.observableArray() : ko.observable()
-    self[key].subscribe(function (newValue) {
+  // initialize viewmodel ko properties and auto-save
+  self.config = configApplySync(self.config, (path, config, key, keySchema) => {
+    console.log('schema:', keySchema)
+    config[key] = keySchema.type == 'array' ? ko.observableArray() : ko.observable()
+    config[key].subscribe(function (newValue) {
       if (!self.settingsInitialized()) return
-      console.log('setting changed', details.path, newValue)
-      configStore.set(details.path, newValue)
+      console.log('setting changed', path, newValue)
+      configStore.set(path, newValue)
     })
   })
 
-  self.windowStyleTheme.subscribe(
+  console.log('done prepping config', self.config)
+
+  self.config.window.style.theme.subscribe(
     (newValue) => (document.querySelector('body').dataset.colorTheme = newValue),
   )
-  self.windowStyleBrightness.subscribe(
+  self.config.window.style.brightness.subscribe(
     (newValue) => (document.querySelector('body').dataset.brightness = newValue),
   )
 
@@ -125,24 +91,27 @@ function ViewModel() {
   self.canAddNewHideAddressBarSite = ko.computed(
     () =>
       !!self.newHideAddressBarSite() &&
-      (!self.windowHideAddressBarSites() ||
-        !self.windowHideAddressBarSites().includes(self.newHideAddressBarSite())),
+      (!self.config.window.view.hideAddressBarSites() ||
+        !self.config.window.view.hideAddressBarSites().includes(self.newHideAddressBarSite())),
   )
   self.addNewHideAddressBarSite = () => {
     const site = self.newHideAddressBarSite()
     if (!self.canAddNewHideAddressBarSite()) return
     self.newHideAddressBarSite('')
-    if (!Array.isArray(self.windowHideAddressBarSites())) self.windowHideAddressBarSites([])
-    self.windowHideAddressBarSites.push(site)
+    if (!Array.isArray(self.config.window.view.hideAddressBarSites()))
+      self.config.window.view.hideAddressBarSites([])
+    self.config.window.view.hideAddressBarSites.push(site)
   }
   self.removeHideAddressBarSite = (value) => {
-    self.windowHideAddressBarSites.remove(value)
+    self.config.window.view.hideAddressBarSites.remove(value)
   }
 
   self.kc3IsUpdating = ko.observable(false)
   self.kc3UpdatingChannel = ko.observable('')
   self.canSetKc3Channel = ko.computed(() => !self.kc3IsUpdating())
-  self.canUpdateKc3 = ko.computed(() => !self.kc3IsUpdating() && !!self.kc3UpdateChannel())
+  self.canUpdateKc3 = ko.computed(
+    () => !self.kc3IsUpdating() && !!self.config.kc3kai.update.channel(),
+  )
   self.canSetKc3Channel.subscribe((newValue) => console.log('canSetKc3Channel:', newValue))
   self.canUpdateKc3.subscribe((newValue) => console.log('canUpdateKc3:', newValue))
 
@@ -165,7 +134,7 @@ function ViewModel() {
   }
 
   self.getKc3Location = async function () {
-    const channel = self.kc3UpdateChannel()
+    const channel = self.config.kc3kai.update.channel()
     if (!channel.startsWith('custom')) {
       console.error('Custom kc3 channel not selected.')
       return
@@ -175,8 +144,8 @@ function ViewModel() {
     const path = result.filePaths[0]
     console.log('Selected kc3 path', path)
 
-    if (channel === 'custom1') self.kc3Custom1Location(path)
-    else if (channel === 'custom2') self.kc3Custom2Location(path)
+    if (channel === 'custom1') self.config.kc3kai.update.custom1Location(path)
+    else if (channel === 'custom2') self.config.kc3kai.update.custom2Location(path)
     else console.error('Unknown custom kc3 channel', channel)
   }
 
