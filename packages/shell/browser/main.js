@@ -39,16 +39,15 @@ const defaultConfig = {
     },
   },
   kc3kai: {
+    startup: {
+      gamePage: 'kc3',
+      openDevtools: true,
+      openStratRoom: true,
+    },
     update: {
       channel: 'release',
       schedule: 'daily',
       auto: true,
-    },
-    startup: {
-      openStartPage: true,
-      openDMMPage: false,
-      openDevtools: true,
-      openStratRoom: true,
     },
   },
   proxy: {
@@ -884,11 +883,23 @@ class Browser {
       DMMPageUrl = 'http://www.dmm.com/netgame/social/-/gadgets/=/app_id=854854/'
       let startTab
 
+      // TODO: remove cases for old config keys
+      if (config.get('kc3kai.startup.openStartPage')) {
+        config.delete('kc3kai.startup.openStartPage')
+        config.set('kc3kai.startup.gamePage', 'kc3')
+      }
       if (config.get('kc3kai.startup.openDMMPage')) {
-        startTab = win.tabs.create({ initialUrl: DMMPageUrl })
-      } else {
-        if (config.get('kc3kai.startup.openStartPage'))
+        config.delete('kc3kai.startup.openDMMPage')
+        config.set('kc3kai.startup.gamePage', 'dmm')
+      }
+
+      switch (config.get('kc3kai.startup.gamePage')) {
+        case 'kc3':
           startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+          break
+        case 'dmm':
+          startTab = win.tabs.create({ initialUrl: DMMPageUrl })
+          break
       }
 
       const kc3StratRoomUrl =
