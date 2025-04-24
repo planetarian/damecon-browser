@@ -802,10 +802,11 @@ class Browser {
   renderToolbar(tabId) {
     const win = this.windows.find((w) => w.tabs.tabList.some((t) => t.id == tabId))
     const tab = win.tabs.tabList.find((t) => t.id == tabId)
+    const url = tab?.url || tab?.webContents.mainFrame.url
     this.forceShowToolbar = !this.forceShowToolbar
     win.webContents.send('webui-message', {
       type: 'webui-render-toolbar',
-      data: { forceShow: this.forceShowToolbar },
+      data: { forceShow: url != settingsUrl && this.forceShowToolbar },
     })
   }
 
