@@ -76,6 +76,12 @@ const setupMenu = (browser) => {
           nonNativeMacOSRole: true,
           click: () => browser.renderToolbar(tab().id),
         },
+        {
+          label: 'Focus Addressbar',
+          accelerator: 'Alt+D',
+          nonNativeMacOSRole: true,
+          click: () => browser.focusAddressBar(tab().id),
+        },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },

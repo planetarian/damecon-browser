@@ -810,6 +810,19 @@ class Browser {
     })
   }
 
+  focusAddressBar(tabId) {
+    const win = this.windows.find((w) => w.tabs.tabList.some((t) => t.id == tabId))
+    const tab = win.tabs.tabList.find((t) => t.id == tabId)
+    const url = tab?.url || tab?.webContents.mainFrame.url
+    if (url == settingsUrl) return
+
+    win.webContents.focus()
+    win.webContents.send('webui-message', {
+      type: 'webui-focus-addressbar',
+      data: {},
+    })
+  }
+
   getKc3Path() {
     const currentChannel = configStore.get('kc3kai.update.channel')
     let kc3Path

@@ -79,6 +79,10 @@ class WebUI {
           case 'webui-render-toolbar':
             if (self.activeTabId > -1) self.renderToolbar(msg.data.forceShow)
             break
+          case 'webui-focus-addressbar':
+            self.renderToolbar(true)
+            document.getElementById('addressurl').select()
+            break
           default:
             alert('webui.js received unknown webui-message type:\n' + JSON.stringify(msg))
             break
@@ -267,7 +271,18 @@ class WebUI {
 
   onAddressUrlKeyPress(event) {
     if (event.code === 'Enter') {
-      const url = this.$.addressUrl.value
+      let ctrl = event.ctrlKey
+      let url = this.$.addressUrl.value
+
+      if (ctrl) {
+        const shouldComplete = /^\w[\w\d-]+$/.test(url)
+        console.log('trying to complete url', url, shouldComplete)
+        if (shouldComplete) {
+          console.log('completing url.')
+          url = `https://${url}.com/`
+        }
+      }
+
       chrome.tabs.update({ url })
     }
   }
