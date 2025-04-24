@@ -351,6 +351,7 @@ class Browser {
       const fWin = () => this.getFocusedWindow()
       const fTab = () => fWin().getFocusedTab()
       const fWc = () => fTab().webContents
+
       globalShortcut.registerAll(['CmdOrCtrl+T'], () => fWin().tabs.create())
       globalShortcut.registerAll(['CmdOrCtrl+R', 'F5'], () => fWc().reload())
       globalShortcut.registerAll(['CmdOrCtrl+Shift+R', 'CmdOrCtrl+F5'], () =>
@@ -796,6 +797,22 @@ class Browser {
         webContents.zoomFactor = Math.max(min, currentZoom - increment)
       }
     })
+
+    webContents.on('will-prevent-unload', (event) => {
+      if (this.checkConfirmClose()) event.preventDefault()
+    })
+  }
+
+  checkConfirmClose() {
+    const choice = dialog.showMessageBoxSync({
+      type: 'question',
+      buttons: ['Leave', 'Stay'],
+      title: 'Do you want to leave this site?',
+      message: 'Changes you made may not be saved.',
+      defaultId: 0,
+      cancelId: 1,
+    })
+    return choice === 0
   }
 
   confirmCloseTab(tabId) {
@@ -804,19 +821,9 @@ class Browser {
     let leave = true
     // add other URLs requiring confirmation here
     if ([DMMPageUrl].includes(tab.webContents.mainFrame.url)) {
-      const choice = dialog.showMessageBoxSync({
-        type: 'question',
-        buttons: ['Leave', 'Stay'],
-        title: 'Do you want to leave this site?',
-        message: 'Changes you made may not be saved.',
-        defaultId: 0,
-        cancelId: 1,
-      })
-      leave = choice === 0
+      leave = this.checkConfirmClose()
     }
-    if (leave) {
-      tab.destroy()
-    }
+    if (leave) tab.destroy()
   }
 
   forceShowToolbar = false
