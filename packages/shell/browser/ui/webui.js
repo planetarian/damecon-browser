@@ -29,6 +29,7 @@ class WebUI {
       body: $('body'),
       root: $('#root'),
       topBar: $('#topbar'),
+      topBarContainer: $('#topbar-container'),
       toolBar: $('.toolbar'),
       zoomPresenter: $('#zoom-presenter'),
     }
@@ -55,7 +56,7 @@ class WebUI {
     document.body.classList.add(platformClass)
 
     // Received message from main.js
-    ipc.on('webui-message', (ev, msg) => {
+    ipc.on('webui-message', async (ev, msg) => {
       console.log('>> webui-message: ', msg)
       if (msg?.type) {
         switch (msg.type) {
@@ -68,6 +69,11 @@ class WebUI {
             break
           case 'webui-init':
             self.init(msg.data.windowId)
+            break
+          case 'webui-display-mode':
+            this.$.root.dataset.displayMode = msg.data.mode
+            const height = this.$.topBarContainer.clientHeight
+            await ipc.send('webui-message', 'webui-display-mode-changed', { height })
             break
           default:
             alert('webui.js received unknown webui-message type:\n' + JSON.stringify(msg))
@@ -148,7 +154,7 @@ class WebUI {
         }
       }
     })
-    resizeObserver.observe(this.$.topBar)
+    resizeObserver.observe(this.$.topBarContainer)
   }
 
   async init(windowId) {
@@ -290,7 +296,7 @@ class WebUI {
       }
 
       if (event.button === 1) {
-        ipc.send('webui-message', 'webui-close-tab', { tabId: tab.id })
+        await ipc.send('webui-message', 'webui-close-tab', { tabId: tab.id })
       }
     })
 

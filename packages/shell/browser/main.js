@@ -494,6 +494,10 @@ class Browser {
           console.log('zoom changed', data)
           win.tabs.updateLayout(data.height)
           break
+        case 'webui-display-mode-changed':
+          console.log('display mode changed', data)
+          win.tabs.updateLayout(data.height)
+          break
         case 'webui-close-tab':
           console.log('clicked tab X', data)
           this.confirmCloseTab(data.tabId)
@@ -678,6 +682,10 @@ class Browser {
       },
     })
     win.window.on('resize', () => {
+      win.window.webContents.send('webui-message', {
+        type: 'webui-display-mode',
+        data: { mode: win.window.isMaximized() ? 'maximized' : 'normal' },
+      })
       if (win.window.isMaximized()) return
       const size = win.window.getSize()
       config.set('window.state.width', size[0])
