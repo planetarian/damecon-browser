@@ -37,6 +37,9 @@ const defaultConfig = {
       theme: 'andra',
       brightness: 'system',
     },
+    view: {
+      hideActionBarSites: ['http://www.dmm.com/netgame/social/-/gadgets/=/app_id=854854/'],
+    },
   },
   kc3kai: {
     startup: {

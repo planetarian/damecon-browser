@@ -92,6 +92,22 @@
   padding: 20px;
 }
 
+.form-items-scroller {
+  overflow-y: scroll;
+  max-height: 100px;
+}
+.form-array-string-item {
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: row;
+}
+.form-array-string-item.add-new {
+  margin-top: 8px;
+}
+.form-array-string-item button {
+  width: 40px;
+}
+
 #background-processes {
   flex: 0 1 auto;
   min-width: 50%;
