@@ -34,14 +34,14 @@ class Tabs extends EventEmitter {
   }
 
   create(webContentsViewOptions) {
-    console.log('>> tabs.create()', webContentsViewOptions?.initialUrl)
+    //console.log('>> tabs.create()', webContentsViewOptions?.initialUrl)
     const tab = new Tab(this.window, webContentsViewOptions)
     this.tabList.push(tab)
     if (!this.selected) this.selected = tab
 
     //tab.show() // must be attached to window
     const url = webContentsViewOptions?.initialUrl ?? this.newTabPageUrl
-    console.log('>> creating tab', url, webContentsViewOptions)
+    //console.log('>> creating tab', url, webContentsViewOptions)
     tab.webContents.on('did-navigate', (origin, targets) => {
       this.emit('tab-navigated', tab, url)
     })
@@ -53,7 +53,7 @@ class Tabs extends EventEmitter {
   }
 
   remove(tabId) {
-    console.log('>> tabs.remove()', tabId)
+    //console.log('>> tabs.remove()', tabId)
     const tabIndex = this.tabList.findIndex((tab) => tab.id === tabId)
     if (tabIndex < 0) {
       throw new Error(`Tabs.remove: unable to find tab.id = ${tabId}`)
@@ -73,11 +73,8 @@ class Tabs extends EventEmitter {
   }
 
   removeExtensionTabs(extensionId) {
-    console.log('>> tabs: removing tabs for extension', extensionId)
-    console.log(
-      '>> - all ids',
-      this.tabList.map((tab) => tab.id),
-    )
+    //console.log('>> tabs: removing tabs for extension', extensionId)
+    //console.log('>> - all ids', this.tabList.map((tab) => tab.id))
     const tabs = this.tabList.filter((tab) =>
       tab.webContents.getURL().startsWith(`chrome-extension://${extensionId}/`),
     )
@@ -85,7 +82,7 @@ class Tabs extends EventEmitter {
   }
 
   select(tabId) {
-    console.log('>> tabs.select()', tabId)
+    //console.log('>> tabs.select()', tabId)
     const tab = this.get(tabId)
     if (!tab) return
     if (this.selected && this.selected != tab) this.selected.hide()
@@ -95,7 +92,7 @@ class Tabs extends EventEmitter {
   }
 
   deselect() {
-    console.log('>> tabs.deselect()')
+    //console.log('>> tabs.deselect()')
     const tab = this.selected
     if (tab) {
       this.emit('tab-deselected', tab)
@@ -105,13 +102,13 @@ class Tabs extends EventEmitter {
   }
 
   hide() {
-    console.log('>> tabs.hide()')
+    //console.log('>> tabs.hide()')
     if (this.selected) this.deselect()
     this.hidden = true
   }
 
   show() {
-    console.log('>> tabs.show()')
+    //console.log('>> tabs.show()')
     this.hidden = false
     if (this.selected) this.selected.show()
   }

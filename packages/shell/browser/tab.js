@@ -41,25 +41,25 @@ class Tab {
   }
 
   loadURL(url) {
-    console.log('>> tab.loadURL()', url)
+    //console.log('>> tab.loadURL()', url)
     return this.view.webContents.loadURL(url)
   }
 
   show() {
-    console.log('>> tab.show()', this.id)
+    //console.log('>> tab.show()', this.id)
     this.visible = true
     this.updateLayout()
   }
 
   hide() {
-    console.log('>> tab.hide()', this.id)
+    //console.log('>> tab.hide()', this.id)
     //this.stopResizeListener()
     this.visible = false
     this.updateLayout()
   }
 
   reload() {
-    console.log('>> tab.reload()')
+    //console.log('>> tab.reload()')
     this.view.webContents.reload()
   }
 

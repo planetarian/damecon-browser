@@ -61,13 +61,13 @@ const configApply = async function (config, propertyCallback, schema = configSch
     const keyPath = path ? `${path}.${key}` : key
     const source = schema[key]
     if (source.type && typeof source.type == 'string') {
-      console.log(`> executing ${keyPath}`)
+      //console.log(`> executing ${keyPath}`)
       // config property
       await propertyCallback(keyPath, config, key, source)
     } else {
       // sub-key
       if (!config.hasOwnProperty(key) || typeof config[key] != 'object') config[key] = {}
-      console.log(` \\ entering ${key} (${keyPath})`)
+      //console.log(` \\ entering ${key} (${keyPath})`)
       await configApply(config[key], propertyCallback, source, keyPath)
     }
   }
@@ -78,13 +78,13 @@ const configApplySync = function (config, propertyCallback, schema = configSchem
     const keyPath = path ? `${path}.${key}` : key
     const source = schema[key]
     if (source.type && typeof source.type == 'string') {
-      console.log(`> executing ${keyPath}`)
+      //console.log(`> executing ${keyPath}`)
       // config property
       propertyCallback(keyPath, config, key, source)
     } else {
       // sub-key
       if (!config.hasOwnProperty(key) || typeof config[key] != 'object') config[key] = {}
-      console.log(` \\ entering ${key} (${keyPath})`)
+      //console.log(` \\ entering ${key} (${keyPath})`)
       configApplySync(config[key], propertyCallback, source, keyPath)
     }
   }
@@ -100,7 +100,7 @@ const populateConfigDefaults = function (config, schema = configSchema) {
         (config.hasOwnProperty(key) && typeof config[key] != 'undefined')
       )
         return
-      console.log(keySchema)
+      //console.log(keySchema)
       config[key] = keySchema.default
     },
     schema,
