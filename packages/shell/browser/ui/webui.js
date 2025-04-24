@@ -86,7 +86,11 @@ class WebUI {
   async renderTabs() {
     //console.log('>> rendering tabs')
     const tabs = [...(await this.getCurrentTabs())]
-    for (const tab of tabs) this.prepareTab(tab)
+    for (const tab of tabs)
+      this.prepareTab(
+        tab,
+        this.tabs().find((t) => t.id == tab.id),
+      )
     this.updateTabSeparators(tabs)
     this.tabs(tabs)
 
@@ -253,12 +257,19 @@ class WebUI {
       this.heldTabId = tab.id
     }
   }
-  tabMouseMove(tab, ev) {
+  async tabMouseMove(tab, ev) {
     if (this.hoveringTabId != tab.id) {
       this.hoveringTabId = tab.id
       this.updateTabSeparators(this.tabs())
     }
-    if (this.heldTabId == -1 || tab.url == this.settingsUrl) return
+    if (this.heldTabId == -1 || tab.url == this.settingsUrl || tab.id == this.heldTabId) return
+
+    const thisIndex = this.tabs().findIndex((t) => t.id == tab.id)
+
+    const heldTab = this.tabs().find((t) => t.id === this.heldTabId)
+    if (!heldTab.active()) await chrome.tabs.update(heldTab.id, { active: true })
+    await chrome.tabs.move(this.heldTabId, { index: thisIndex })
+    await this.renderTabs()
   }
   tabMouseOut(tab, ev) {
     this.hoveringTabId = -1
@@ -266,8 +277,8 @@ class WebUI {
   }
   tabMouseUp(tab, ev) {
     if (ev.button === 1 && this.closingTabId == tab.id) chrome.tabs.remove(tab.id)
-    else if (ev.button === 0 && this.heldTabId == tab.id) {
-      chrome.tabs.update(tab.id, { active: true })
+    else if (ev.button === 0) {
+      if (this.heldTabId == tab.id) chrome.tabs.update(tab.id, { active: true })
       this.heldTabId = -1
     }
     return true
