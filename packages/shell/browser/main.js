@@ -1,7 +1,7 @@
-const path = require('path')
-const fsSync = require('fs')
-const url = require('url')
-const {
+import path from 'path'
+import fsSync from 'fs'
+import url from 'url'
+import {
   app,
   session,
   BrowserWindow,
@@ -10,19 +10,22 @@ const {
   ipcMain,
   nativeTheme,
   dialog,
-} = require('electron')
-const ConfigStore = require('configstore')
+} from 'electron'
+import ConfigStore from 'configstore'
 
-const { Tabs } = require('./tabs')
+// These two break if using import syntax...?
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
-const { setupMenu } = require('./menu')
-const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { installChromeWebStore, loadAllExtensions } = require('electron-chrome-web-store')
 
-const { Worker } = require('worker_threads')
-const { setTimeout } = require('timers/promises')
-const NodeURL = require('url')
-const { debug } = require('console')
+import { buildChromeContextMenu } from 'electron-chrome-context-menu'
+import setupMenu from './menu'
+import Tabs from './tabs'
+
+import './workers/worker-shim'
+import kc3UpdateWorker from 'worker-loader!./workers/kc3update-worker.js'
+
+import { setTimeout } from 'timers/promises'
+import { debug } from 'console'
 
 const defaultConfig = {
   window: {
@@ -65,8 +68,10 @@ app.commandLine.appendSwitch('enable-gpu-memory-buffer-compositor-resources')
 app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
 if (process.execPath.match(/(damecon(-browser)?|chrome)/)) {
-  currPath = path.dirname(process.execPath)
-  let p = path.join(currPath, 'userdata')
+  const currentPath = path.dirname(process.execPath)
+  console.log('process.execPath', process.execPath)
+  console.log('currentPath', currentPath)
+  let p = path.join(currentPath, 'userdata')
   app.setPath('userData', p)
 } else {
   // app.commandLine.appendSwitch('proxy-server', '192.168.0.123:1235')
@@ -79,6 +84,9 @@ const PATHS = {
   WEBUI: app.isPackaged
     ? path.resolve(process.resourcesPath, 'ui')
     : path.resolve(SHELL_ROOT_DIR, 'browser', 'ui'),
+  WORKERS: app.isPackaged
+    ? path.resolve(process.resourcesPath, 'workers')
+    : path.resolve(SHELL_ROOT_DIR, 'browser', 'workers'),
   PRELOAD: path.join(__dirname, '../renderer/browser/preload.js'),
   LOCAL_EXTENSIONS: path.join(ROOT_DIR, 'extensions'),
   KC3_EXTENSIONS: path.join(ROOT_DIR, 'extensions'),
@@ -569,7 +577,10 @@ class Browser {
 
     // set up kc3 update worker thread
     console.log('>> main: starting kc3 update service')
-    this.kc3UpdateWorker = new Worker(new NodeURL.URL('./kc3update-worker.js', import.meta.url))
+
+    //const workerUrl = new URL('./workers/kc3update-worker.js', import.meta.url)
+    //this.kc3UpdateWorker = new Worker(path.join(PATHS.WORKERS,'kc3update-worker.js'))
+    this.kc3UpdateWorker = new kc3UpdateWorker()
     this.kc3UpdateWorker.on('message', async (msg) => {
       //console.log('main.js received message from KC3 update worker', msg)
       // msg: { type, data }
@@ -590,7 +601,6 @@ class Browser {
           break
         case 'update-process-completed':
           console.log('Received completion report from KC3 updater.')
-          console.log('>> main: sending webui-message', msg.type)
           win.webContents.send('webui-message', { type: msg.type, data: msg.data })
 
           if (msg.data.name === 'KC3 Update') {
@@ -891,4 +901,5 @@ class Browser {
   }
 }
 
-module.exports = Browser
+//module.exports = Browser
+export default Browser
