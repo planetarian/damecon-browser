@@ -270,7 +270,7 @@ class WebUI {
   }
 
   onAddressUrlKeyPress(event) {
-    if (event.code === 'Enter') {
+    if (['Enter', 'NumpadEnter'].includes(event.code)) {
       let ctrl = event.ctrlKey
       let url = this.$.addressUrl.value
 
