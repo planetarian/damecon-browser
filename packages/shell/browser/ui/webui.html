@@ -3,6 +3,9 @@
   <head>
     <meta charset="utf-8">
     <title>Damecon</title>
+    <script type="text/javascript" src="assets/js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="assets/js/knockout-3.5.1.js"></script>
+    <script type="text/javascript" src="assets/js/knockout-i18n.js"></script>
     <link rel="stylesheet" href="assets/css/all.min.css" />
     <link rel="stylesheet" href="webui.css" />
   </head>
@@ -33,19 +36,19 @@
             </button>
             <div class="app-drag app-drag-right"></div>
             <div class="window-controls">
-              <button id="minimize" type="button" class="control" title="minimize"><i class="fa-regular fa-window-minimize fa-xs"></i></button>
-              <button id="maximize" type="button" class="control" title="maximize"><i class="fa-regular fa-square-full fa-2xs"></i></button>
-              <button id="close" type="button" class="control" title="close"><i class="fa-solid fa-xmark"></i></button>
+              <button id="minimize" type="button" class="control" title="minimize" data-bind="click: windowActionMinimize"><i class="fa-regular fa-window-minimize fa-xs"></i></button>
+              <button id="maximize" type="button" class="control" title="maximize" data-bind="click: windowActionMaximize"><i class="fa-regular fa-square-full fa-2xs"></i></button>
+              <button id="close" type="button" class="control" title="close" data-bind="click: windowActionClose"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
           <div class="toolbar">
             <div class="page-controls">
-              <button id="goback" type="button" class="control" title="go back"><i class="fa-solid fa-arrow-left"></i></button>
-              <button id="goforward" type="button" class="control" title="go forward"><i class="fa-solid fa-arrow-right"></i></button>
-              <button id="reload" type="button" class="control" title="reload"><i class="fa-solid fa-rotate-right"></i></button>
+              <button id="goback" type="button" class="control" title="go back" data-bind="click: browserActionGoBack"><i class="fa-solid fa-arrow-left"></i></button>
+              <button id="goforward" type="button" class="control" title="go forward" data-bind="click: browserActionGoForward"><i class="fa-solid fa-arrow-right"></i></button>
+              <button id="reload" type="button" class="control" title="reload" data-bind="click: browserActionReload"><i class="fa-solid fa-rotate-right"></i></button>
             </div>
             <div class="address-bar">
-              <input id="addressurl" spellcheck="false" title="address bar"/>
+              <input id="addressurl" spellcheck="false" title="address bar" data-bind="value: activeTab.addressUrl"/>
             </div>
             <browser-action-list id="actions"></browser-action-list>
           </div>

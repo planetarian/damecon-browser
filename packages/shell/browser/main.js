@@ -365,9 +365,7 @@ class Browser {
       globalShortcut.registerAll(['CmdOrCtrl+Tab'], () => this.nextTab(fTab().id))
       globalShortcut.registerAll(['CmdOrCtrl+Shift+Tab'], () => this.prevTab(fTab().id))
     })
-    app.on('browser-window-blur', () => {
-      globalShortcut.unregisterAll()
-    })
+    app.on('browser-window-blur', () => globalShortcut.unregisterAll())
 
     if ('registerPreloadScript' in this.session) {
       this.session.registerPreloadScript({
