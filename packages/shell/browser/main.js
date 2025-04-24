@@ -348,9 +348,21 @@ class Browser {
     setupMenu(this)
 
     app.on('browser-window-focus', () => {
-      globalShortcut.registerAll(['CommandOrControl+W'], () =>
-        this.getFocusedWindow().getFocusedTab().destroy(),
+      const fWin = () => this.getFocusedWindow()
+      const fTab = () => fWin().getFocusedTab()
+      const fWc = () => fTab().webContents
+      globalShortcut.registerAll(['CmdOrCtrl+T'], () => fWin().tabs.create())
+      globalShortcut.registerAll(['CmdOrCtrl+R', 'F5'], () => fWc().reload())
+      globalShortcut.registerAll(['CmdOrCtrl+Shift+R', 'CmdOrCtrl+F5'], () =>
+        fWc().reloadIgnoringCache(),
       )
+      globalShortcut.registerAll(['CmdOrCtrl+W', 'CmdOrCtrl+F4'], () =>
+        this.confirmCloseTab(fTab().id),
+      )
+      globalShortcut.registerAll(['Alt+A'], () => this.renderToolbar(fTab().id))
+      globalShortcut.registerAll(['Alt+D'], () => this.focusAddressBar(fTab().id))
+      globalShortcut.registerAll(['CmdOrCtrl+Tab'], () => this.nextTab(fTab().id))
+      globalShortcut.registerAll(['CmdOrCtrl+Shift+Tab'], () => this.prevTab(fTab().id))
     })
     app.on('browser-window-blur', () => {
       globalShortcut.unregisterAll()
