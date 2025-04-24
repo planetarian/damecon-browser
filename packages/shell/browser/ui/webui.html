@@ -12,17 +12,13 @@
   <body>
     <!-- ko if: windowId() > 0 -->
     <div id="root" data-bind="attr: { class: `platform-${platform} theme-${theme()} brightness-${brightness()}` }">
-      <div id="topbar-container">
+      <div id="topbar-container" data-bind="rendered: setTopbarObserver.bind($data)">
         <div id="topbar">
           <div id="tabstrip">
             <ul class="tab-list">
               <!-- ko foreach: tabs() -->
-              <li data-bind="attr: { class: `tab-container tab-id-${id} tab-position-${position}${active ? ' tab-active' : ''}${url==$parent.settingsUrl ? ' tab-compact' : ''}`},
-                event: {
-                  mousedown: $parent.browserEventTabMouseDown.bind($parent),
-                  mousemove: $parent.browserEventTabMouseMove.bind($parent),
-                  mouseup: $parent.browserEventTabMouseUp.bind($parent)
-                }">
+              <li data-bind="attr: { class: `tab-container tab-separator-${separator()}${active() ? ' tab-active' : ''}${url==$parent.settingsUrl ? ' tab-compact' : ''}`},
+                event: { mousedown: $parent.tabMouseDown.bind($parent), mousemove: $parent.tabMouseMove.bind($parent), mouseout: $parent.tabMouseOut.bind($parent), mouseup: $parent.tabMouseUp.bind($parent) }">
                 <div class="tab">
                   <!-- ko if: favIconUrl -->
                   <img class="favicon" data-bind="attr: { src: favIconUrl }" alt="page icon" />
@@ -57,7 +53,7 @@
               <button id="close" type="button" class="control" title="close" data-bind="click: windowActionClose"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
-          <!-- ko if: showToolbar -->
+          <!-- ko if: activeTab()?.showAddressBar -->
           <div class="toolbar">
             <div class="page-controls">
               <button id="goback" type="button" class="control" title="go back" data-bind="click: browserActionGoBack"><i class="fa-solid fa-arrow-left"></i></button>
@@ -65,7 +61,7 @@
               <button id="reload" type="button" class="control" title="reload" data-bind="click: browserActionReload"><i class="fa-solid fa-rotate-right"></i></button>
             </div>
             <div class="address-bar">
-              <input id="addressurl" spellcheck="false" title="address bar" data-bind="value: activeTab.addressUrl"/>
+              <input id="addressurl" type="text" spellcheck="false" title="address bar" data-bind="textInput: activeTab().urlInput, event: { keydown: browserActionAddressKeyDown }"/>
             </div>
             <browser-action-list id="actions"></browser-action-list>
           </div>

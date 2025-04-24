@@ -51,7 +51,7 @@ const configSchema = {
     client: {
       host: { type: 'string', default: '127.0.0.1' },
       port: { type: 'number', default: 8081 },
-      enable: { type: 'bool', default: 'false' },
+      enable: { type: 'bool', default: false },
     },
   },
 }

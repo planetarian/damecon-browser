@@ -127,7 +127,7 @@ async function loadExtensions(session, extensionsPath) {
   const results = []
 
   for (const extPath of extensionDirectories.filter(Boolean)) {
-    //console.log(`Loading extension from ${extPath}`)
+    console.log(`Loading extension from ${extPath}`)
     try {
       const extensionInfo = await session.loadExtension(extPath)
       results.push(extensionInfo)
@@ -171,7 +171,7 @@ class TabbedBrowserWindow {
       this.webContents.openDevTools({ mode: 'detach' })
     }
     this.webContents.on('did-finish-load', () => {
-      console.log('>> main: webui finished loading.')
+      //console.log('>> main: webui finished loading.')
       this.webContents.send('webui-message', {
         type: 'webui-init',
         data: { windowId: this.window.id },
@@ -193,11 +193,11 @@ class TabbedBrowserWindow {
   initTabs(options) {
     const self = this
     const tabsOpts = { newTabPageUrl: newTabUrl }
-    console.log('>> main: loading tabs', tabsOpts)
+    //console.log('>> main: loading tabs', tabsOpts)
     this.tabs = new Tabs(this.window, tabsOpts)
 
     this.tabs.on('tab-created', function onTabCreated(tab) {
-      console.log(">> main.tabs.on('tab-created', tabsOpts)")
+      //console.log(">> main.tabs.on('tab-created', tabsOpts)")
       //tab.loadURL(options.urls.newtab)
 
       // Track tab that may have been created outside of the extensions API.
@@ -205,7 +205,7 @@ class TabbedBrowserWindow {
     })
 
     this.tabs.on('tab-navigated', function onTabNavigated(tab, tabUrl) {
-      console.log(">> main.tabs.on('tab-navigated', tabsOpts)")
+      //console.log(">> main.tabs.on('tab-navigated', tabsOpts)")
       if (
         (tabUrl === kc3StartPageUrl || tabUrl === DMMPageUrl) &&
         configStore.get('kc3kai.startup.openDevtools')
@@ -215,12 +215,12 @@ class TabbedBrowserWindow {
     })
 
     this.tabs.on('tab-selected', function onTabSelected(tab) {
-      console.log(">> main.tabs.on('tab-selected', tabsOpts)")
+      //console.log(">> main.tabs.on('tab-selected', tabsOpts)")
       self.extensions.selectTab(tab.webContents)
     })
 
     this.tabs.on('tabs-hidden', function onTabsHidden(hidden) {
-      console.log(">> main.tabs.on('tabs-hidden', tabsOpts)")
+      //console.log(">> main.tabs.on('tabs-hidden', tabsOpts)")
       self.webContents.send('webui-message', { message: 'tabs-hidden', value: hidden })
     })
   }
@@ -289,6 +289,15 @@ class TabbedBrowserWindow {
   }
 }
 
+function logBytes(x, showAll = false) {
+  if (!showAll && x[0] != 'rss') return
+  console.log(x[0], x[1] / (1000.0 * 1000), 'MB')
+}
+
+function getMemory() {
+  Object.entries(process.memoryUsage()).map(logBytes)
+}
+
 class Browser {
   windows = []
   currentKc3ExtensionId = null
@@ -298,6 +307,8 @@ class Browser {
   }
 
   constructor() {
+    //setInterval(getMemory, 1000)
+
     this.ready = new Promise((resolve) => {
       this.resolveReady = resolve
     })
@@ -360,7 +371,7 @@ class Browser {
       globalShortcut.registerAll(['CmdOrCtrl+W', 'CmdOrCtrl+F4'], () =>
         this.confirmCloseTab(fTab().id),
       )
-      globalShortcut.registerAll(['Alt+A'], () => this.renderToolbar(fTab().id))
+      globalShortcut.registerAll(['Alt+A'], () => this.toggleAddressBar(fTab().id))
       globalShortcut.registerAll(['Alt+D'], () => this.focusAddressBar(fTab().id))
       globalShortcut.registerAll(['CmdOrCtrl+Tab'], () => this.nextTab(fTab().id))
       globalShortcut.registerAll(['CmdOrCtrl+Shift+Tab'], () => this.prevTab(fTab().id))
@@ -383,7 +394,7 @@ class Browser {
       session: this.session,
 
       createTab: async (details) => {
-        console.log('>> main.extensions.createTab()')
+        //console.log('>> main.extensions.createTab()')
         await this.ready
 
         const win =
@@ -402,18 +413,18 @@ class Browser {
         return [tab.webContents, tab.window]
       },
       selectTab: (tab, browserWindow) => {
-        console.log('>> main.extensions.selectTab()')
+        //console.log('>> main.extensions.selectTab()')
         const win = this.getWindowFromBrowserWindow(browserWindow)
         win?.tabs.select(tab.id)
       },
       removeTab: (tab, browserWindow) => {
-        console.log('>> main.extensions.removeTab()')
+        //console.log('>> main.extensions.removeTab()')
         const win = this.getWindowFromBrowserWindow(browserWindow)
         win?.tabs.remove(tab.id)
       },
 
       createWindow: async (details) => {
-        console.log('>> main.extensions.createWindow()')
+        //console.log('>> main.extensions.createWindow()')
         await this.ready
 
         const win = this.createTabbedWindow({
@@ -423,7 +434,7 @@ class Browser {
         return win.window
       },
       removeWindow: (browserWindow) => {
-        console.log('>> main.extensions.removeWindow()')
+        //console.log('>> main.extensions.removeWindow()')
         const win = this.getWindowFromBrowserWindow(browserWindow)
         win?.destroy()
       },
@@ -500,14 +511,14 @@ class Browser {
     const bright = configStore.get('window.style.brightness') || 'system'
     nativeTheme.themeSource = bright
     nativeTheme.on('updated', (ev) => {
-      console.log('nativeTheme.updated', ev)
+      //console.log('nativeTheme.updated', ev)
     })
 
     // initial window creation
     const webuiBase = 'chrome-extension://' + webuiExtensionId
     newTabUrl = webuiBase + '/new-tab.html'
     settingsUrl = webuiBase + '/settings.html'
-    console.log('>> main: now creating window...')
+    //console.log('>> main: now creating window...')
     const win = this.createTabbedWindow({
       initialUrls: [],
       hideAddressBarFor: [settingsUrl],
@@ -515,7 +526,7 @@ class Browser {
 
     // Messages from webui/settings
     ipcMain.handle('webui-message', async (ev, type, data) => {
-      console.log('main.js received message from webui.js', type, data)
+      //console.log('main.js received message from webui.js', type, data)
 
       let result
       switch (type) {
@@ -539,8 +550,8 @@ class Browser {
           }
           break
         case 'get-should-hide-addressbar':
-          if (this.forceShowToolbar) {
-            result = false
+          if (data.url === settingsUrl) {
+            result = true
           } else {
             const sites = configStore
               .get('window.view.hideAddressBarSites')
@@ -563,14 +574,14 @@ class Browser {
           result = { canceled, filePaths }
           break
         case 'webui-zoom-changed':
-          console.log('zoom changed', data)
+          //console.log('zoom changed', data)
           win.tabs.updateLayout(data.height)
           break
         case 'webui-display-mode-changed':
           win.tabs.updateLayout(data.height)
           break
         case 'webui-close-tab':
-          console.log('clicked tab X', data)
+          //console.log('clicked tab X', data)
           this.confirmCloseTab(data.tabId)
           break
       }
@@ -597,23 +608,23 @@ class Browser {
         case 'status-kc3-is-updating':
           this.kc3IsUpdating = msg.data.isUpdating
           this.kc3UpdatingChannel = msg.data.channel
-          console.log('>> main: sending webui-message', msg.type)
+          //console.log('>> main: sending webui-message', msg.type)
           win.webContents.send('webui-message', { type: msg.type, data: msg.data })
           break
         case 'error-do-update':
         case 'update-process-started':
         case 'update-process-progress':
-          console.log('>> main: sending webui-message', msg.type)
+          //console.log('>> main: sending webui-message', msg.type)
           win.webContents.send('webui-message', { type: msg.type, data: msg.data })
           break
         case 'update-process-completed':
-          console.log('Received completion report from KC3 updater.')
+          //console.log('Received completion report from KC3 updater.')
           win.webContents.send('webui-message', { type: msg.type, data: msg.data })
 
           if (msg.data.name === 'KC3 Update') {
             const kc3Path = this.getKc3Path()
             if (!kc3Path) {
-              console.log('No kc3 path provided.')
+              //console.log('No kc3 path provided.')
               return
             }
             const channel = this.kc3UpdatingChannel
@@ -630,7 +641,7 @@ class Browser {
   }
 
   initSession() {
-    console.log('>> main.initSession()')
+    //console.log('>> main.initSession()')
     this.session = session.defaultSession
 
     // Remove Electron and App details to closer emulate Chrome's UA
@@ -655,7 +666,7 @@ class Browser {
   }
 
   createTabbedWindow(options) {
-    console.log('>> main.createWindow()')
+    //console.log('>> main.createWindow()')
     const windowState = configStore.get('window.state')
 
     const win = new TabbedBrowserWindow({
@@ -708,19 +719,19 @@ class Browser {
   }
 
   createInitialWindow() {
-    console.log('>> main.createInitialWindow()')
+    //console.log('>> main.createInitialWindow()')
     this.createTabbedWindow()
   }
 
   async onWebContentsCreated(event, webContents) {
-    console.log('>> main.onWebContentsCreated()')
+    //console.log('>> main.onWebContentsCreated()')
     const browser = this
     const type = webContents.getType()
     const url = webContents.getURL()
     //console.log(`'web-contents-created' event [type:${type}, url:${url}]`)
 
     if (process.env.SHELL_DEBUG && ['backgroundPage', 'remote'].includes(webContents.getType())) {
-      console.log('>> main: opening devtools')
+      //console.log('>> main: opening devtools')
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 
@@ -729,9 +740,9 @@ class Browser {
         case 'foreground-tab':
         case 'background-tab':
         case 'new-window': {
-          console.log('>> main: webContents.setWindowOpenHandler()', details.disposition)
+          //console.log('>> main: webContents.setWindowOpenHandler()', details.disposition)
           queueMicrotask(() => {
-            console.log('>> main: creating window', details)
+            //console.log('>> main: creating window', details)
             const win = this.getWindowFromWebContents(webContents)
             if (!win) return
             const opts = {}
@@ -781,7 +792,7 @@ class Browser {
     })
 
     webContents.on('zoom-changed', (event, zoomDirection) => {
-      console.log(">> webContents.on('zoom-changed')", zoomDirection)
+      //console.log(">> webContents.on('zoom-changed')", zoomDirection)
       var currentZoom = webContents.getZoomFactor()
       const isWebui = webContents.mainFrame.url == webuiUrl
       let increment = isWebui ? 0.1 : 0.2
@@ -824,15 +835,11 @@ class Browser {
     if (leave) tab.destroy()
   }
 
-  forceShowToolbar = false
-  renderToolbar(tabId) {
+  toggleAddressBar(tabId) {
     const win = this.windows.find((w) => w.tabs.tabList.some((t) => t.id == tabId))
-    const tab = win.tabs.tabList.find((t) => t.id == tabId)
-    const url = tab?.url || tab?.webContents.mainFrame.url
-    this.forceShowToolbar = !this.forceShowToolbar
     win.webContents.send('webui-message', {
-      type: 'webui-render-toolbar',
-      data: { forceShow: url != settingsUrl && this.forceShowToolbar },
+      type: 'webui-toggle-addressbar',
+      data: {},
     })
   }
 
