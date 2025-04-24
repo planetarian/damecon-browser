@@ -25,7 +25,8 @@
 </head>
 
 <body>
-  <div id="root">
+  <!-- ko if: config -->
+  <div id="root" data-bind="attr: { class: `theme-${theme()} brightness-${brightness()}` }">
     <!-- ko if: settingsInitialized -->
     <div id="settings">
       <div id="settings-menu">
@@ -193,6 +194,7 @@
       </div>
     </script>
   </div>
+  <!-- /ko -->
 </body>
 
 </html>
