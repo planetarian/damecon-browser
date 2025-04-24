@@ -823,6 +823,19 @@ class Browser {
     })
   }
 
+  prevTab(tabId) {
+    const win = this.windows.find((w) => w.tabs.tabList.some((t) => t.id == tabId))
+    let tabIdx = win.tabs.tabList.findIndex((t) => t.id == tabId) - 1
+    if (tabIdx < 0) tabIdx = win.tabs.tabList.length - 1
+    win.tabs.select(win.tabs.tabList[tabIdx].id)
+  }
+  nextTab(tabId) {
+    const win = this.windows.find((w) => w.tabs.tabList.some((t) => t.id == tabId))
+    let tabIdx = win.tabs.tabList.findIndex((t) => t.id == tabId) + 1
+    if (tabIdx >= win.tabs.tabList.length) tabIdx = 0
+    win.tabs.select(win.tabs.tabList[tabIdx].id)
+  }
+
   getKc3Path() {
     const currentChannel = configStore.get('kc3kai.update.channel')
     let kc3Path

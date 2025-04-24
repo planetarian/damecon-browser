@@ -82,6 +82,18 @@ const setupMenu = (browser) => {
           nonNativeMacOSRole: true,
           click: () => browser.focusAddressBar(tab().id),
         },
+        {
+          label: 'Previous Tab',
+          accelerator: 'Ctrl+Shift+Tab',
+          nonNativeMacOSRole: true,
+          click: () => browser.prevTab(tab().id),
+        },
+        {
+          label: 'Focus Addressbar',
+          accelerator: 'Ctrl+Tab',
+          nonNativeMacOSRole: true,
+          click: () => browser.nextTab(tab().id),
+        },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
