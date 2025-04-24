@@ -389,7 +389,7 @@ export const injectExtensionAPIs = () => {
             ...base,
             acceptDanger: invokeExtension('downloads.acceptDanger', { noop: true }),
             cancel: invokeExtension('downloads.cancel', { noop: true }),
-            download: invokeExtension('downloads.download', { noop: true }),
+            download: invokeExtension('downloads.download'),
             erase: invokeExtension('downloads.erase', { noop: true }),
             getFileIcon: invokeExtension('downloads.getFileIcon', { noop: true }),
             open: invokeExtension('downloads.open', { noop: true }),

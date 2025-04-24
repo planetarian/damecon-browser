@@ -6,16 +6,36 @@ import debug from 'debug'
 
 const d = debug('electron-chrome-extensions:tabs')
 
+function isValidHttpUrl(input: string) {
+  let url
+  try {
+    url = new URL(input)
+  } catch (e) {
+    return false
+  }
+  return url.protocol === 'http:' || url.protocol === 'https:'
+}
+
 const validateExtensionUrl = (url: string, extension: Electron.Extension) => {
   // Convert relative URLs to absolute if needed
   try {
-    url = new URL(url, extension.url).href
+    //url = new URL(url, extension.url).href
+    if (
+      extension.name === 'WebUI' &&
+      !url.startsWith('chrome-extension://') &&
+      !url.startsWith('chrome:') &&
+      !isValidHttpUrl(url)
+    ) {
+      url = 'http://' + url
+    } else {
+      url = new URL(url, extension.url).href
+    }
   } catch (e) {
     throw new Error('Invalid URL')
   }
 
   // Prevent creating chrome://kill or other debug commands
-  if (url.startsWith('chrome:') || url.startsWith('javascript:')) {
+  if (url.startsWith('javascript:')) {
     throw new Error('Invalid URL')
   }
 
@@ -157,6 +177,7 @@ export class TabsAPI {
 
   private getCurrent(event: ExtensionEvent) {
     const tab = this.ctx.store.getActiveTabOfCurrentWindow()
+    //TODO: CHECK//const tab = this.ctx.store.getActiveTabFromWebContents(event.sender)
     return tab ? this.getTabDetails(tab) : undefined
   }
 

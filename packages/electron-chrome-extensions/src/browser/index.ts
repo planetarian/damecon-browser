@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
 import { BrowserActionAPI } from './api/browser-action'
+import { DownloadsAPI } from './api/downloads'
 import { TabsAPI } from './api/tabs'
 import { WindowsAPI } from './api/windows'
 import { WebNavigationAPI } from './api/web-navigation'
@@ -125,6 +126,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     contextMenus: ContextMenusAPI
     commands: CommandsAPI
     cookies: CookiesAPI
+    downloads: DownloadsAPI
     notifications: NotificationsAPI
     permissions: PermissionsAPI
     runtime: RuntimeAPI
@@ -162,6 +164,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       contextMenus: new ContextMenusAPI(this.ctx),
       commands: new CommandsAPI(this.ctx),
       cookies: new CookiesAPI(this.ctx),
+      downloads: new DownloadsAPI(this.ctx),
       notifications: new NotificationsAPI(this.ctx),
       permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
