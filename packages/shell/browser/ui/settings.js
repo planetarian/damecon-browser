@@ -34,7 +34,7 @@ function ViewModel() {
         config = await configStore.all()
       } catch (err) {
         error = err
-        alert('settings fetch bug. trying again..')
+        alert('settings fetch bug encountered. trying again..')
       }
     }
     if (!config) throw error ?? 'Unknown error occurred fetching config.'

@@ -724,6 +724,11 @@ class Browser {
             ) {
               tab.webContents.openDevTools({ activate: true })
             }
+
+            // extension popups don't auto-close when using window.open for whatever reason
+            if (this.popup) {
+              this.popup.destroy()
+            }
           })
 
           return { action: 'deny' }
