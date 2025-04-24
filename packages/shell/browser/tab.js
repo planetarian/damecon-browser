@@ -67,7 +67,7 @@ class Tab {
     const { width, height } = this.window.getContentBounds()
     const padding = 0
     if (headerHeight > 0) topBarHeight = headerHeight
-    const yOffset = topBarHeight // this.hideToolbar ? tabBarHeight : toolbarHeight;
+    const yOffset = topBarHeight
 
     if (this.visible) {
       this.view.setBackgroundColor('white')
