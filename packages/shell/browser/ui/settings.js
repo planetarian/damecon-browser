@@ -1,6 +1,6 @@
 this.viewModel = function () {
   const self = this
-  self.configPages = ko.observableArray([
+  self.configPages = [
     {
       id: 0,
       name: 'Damecon',
@@ -17,7 +17,7 @@ this.viewModel = function () {
       img: 'assets/icons/kccp.png',
       //faIcon: 'fa-solid fa-circle-nodes'
     },
-  ])
+  ]
 
   self.selectConfigPage = function (item) {
     self.selectedConfigPage(item.id)
@@ -25,26 +25,28 @@ this.viewModel = function () {
 
   self.settingsApply = async function (callback) {
     for (let [groupKey, group] of Object.entries(self.settings)) {
-      for (let [key, path] of Object.entries(self.settings[groupKey])) {
-        await callback(key, path)
+      for (let [key, details] of Object.entries(self.settings[groupKey])) {
+        await callback(key, details)
       }
     }
   }
   self.settingsApplySync = function (callback) {
     for (let [groupKey, group] of Object.entries(self.settings)) {
-      for (let [key, path] of Object.entries(self.settings[groupKey])) {
-        callback(key, path)
+      for (let [key, details] of Object.entries(self.settings[groupKey])) {
+        callback(key, details)
       }
     }
   }
 
   self.fetchConfig = async function () {
     const config = await configStore.all()
-    self.settingsApplySync((key, path) => self[key](access(config, path)))
+    self.settingsApplySync((key, details) => self[key](access(config, details.path)))
     self.settingsInitialized(true)
   }
   self.saveConfig = async function () {
-    await self.settingsApply(async (key, path) => await configStore.set(path, self[key]()))
+    await self.settingsApply(
+      async (key, details) => await configStore.set(details.path, self[key]()),
+    )
   }
 
   self.kc3CheckForUpdates = async function () {
@@ -53,34 +55,49 @@ this.viewModel = function () {
 
   self.selectedConfigPage = ko.observable(0)
 
-  self.windowStyleThemes = ['andra', 'daybreak', 'savatieri', 'taiha', 'zuiun']
-  self.windowStyleBrightnesses = ['system', 'light', 'dark']
-  self.kc3GamePages = ['none', 'kc3', 'dmm']
-  self.kc3UpdateChannels = ['release', 'master', 'develop', 'custom1', 'custom2']
-  self.kc3UpdateSchedules = ['startup', 'daily', 'weekly', 'manual']
-
   // This sets up the mappings between knockout properties and config keys.
   self.settings = {
     window: {
-      windowStyleTheme: 'window.style.theme',
-      windowStyleBrightness: 'window.style.brightness',
+      windowStyleTheme: {
+        path: 'window.style.theme',
+        type: 'option',
+        options: ['andra', 'daybreak', 'savatieri', 'taiha', 'zuiun'],
+      },
+      windowStyleBrightness: {
+        path: 'window.style.brightness',
+        type: 'option',
+        options: ['system', 'light', 'dark'],
+      },
+      windowHideAddressBarSites: { path: 'window.view.hideAddressBarSites', type: 'array' },
     },
     kc3kai: {
-      kc3GamePage: 'kc3kai.startup.gamePage',
-      kc3OpenStartPage: 'kc3kai.startup.openStartPage', // TODO: remove
-      kc3OpenDMMPage: 'kc3kai.startup.openDMMPage', // TODO: remove
-      kc3OpenDevtools: 'kc3kai.startup.openDevtools',
-      kc3OpenStratRoom: 'kc3kai.startup.openStratRoom',
-      kc3UpdateChannel: 'kc3kai.update.channel',
-      kc3Custom1Location: 'kc3kai.custom1Location',
-      kc3Custom2Location: 'kc3kai.custom2Location',
-      kc3UpdateSchedule: 'kc3kai.update.schedule',
-      kc3UpdateAuto: 'kc3kai.update.auto',
+      kc3GamePage: {
+        path: 'kc3kai.startup.gamePage',
+        type: 'option',
+        options: ['none', 'kc3', 'dmm'],
+      },
+      kc3OpenStartPage: { path: 'kc3kai.startup.openStartPage', type: 'bool' }, // TODO: remove
+      kc3OpenDMMPage: { path: 'kc3kai.startup.openDMMPage', type: 'bool' }, // TODO: remove
+      kc3OpenDevtools: { path: 'kc3kai.startup.openDevtools', type: 'bool' },
+      kc3OpenStratRoom: { path: 'kc3kai.startup.openStratRoom', type: 'bool' },
+      kc3UpdateChannel: {
+        path: 'kc3kai.update.channel',
+        type: 'option',
+        options: ['release', 'master', 'develop', 'custom1', 'custom2'],
+      },
+      kc3Custom1Location: { path: 'kc3kai.custom1Location', type: 'string' },
+      kc3Custom2Location: { path: 'kc3kai.custom2Location', type: 'string' },
+      kc3UpdateSchedule: {
+        path: 'kc3kai.update.schedule',
+        type: 'option',
+        options: ['startup', 'daily', 'weekly', 'manual'],
+      },
+      kc3UpdateAuto: { path: 'kc3kai.update.auto', type: 'bool' },
     },
     proxy: {
-      proxyClientHost: 'proxy.client.host',
-      proxyClientPort: 'proxy.client.port',
-      proxyClientEnable: 'proxy.client.enable',
+      proxyClientHost: { path: 'proxy.client.host', type: 'string' },
+      proxyClientPort: { path: 'proxy.client.port', type: 'number' },
+      proxyClientEnable: { path: 'proxy.client.enable', type: 'bool' },
     },
   }
   self.settingsInitialized = ko.observable(false)
@@ -88,12 +105,12 @@ this.viewModel = function () {
   self.processes = ko.observableArray([])
 
   // initialize viewmodel items
-  self.settingsApplySync((key, path) => {
-    self[key] = ko.observable()
+  self.settingsApplySync((key, details) => {
+    self[key] = details.type == 'array' ? ko.observableArray() : ko.observable()
     self[key].subscribe(function (newValue) {
       if (!self.settingsInitialized()) return
-      console.log('setting changed', path, newValue)
-      configStore.set(path, newValue)
+      console.log('setting changed', details.path, newValue)
+      configStore.set(details.path, newValue)
     })
   })
 
