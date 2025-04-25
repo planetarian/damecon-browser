@@ -183,7 +183,6 @@ class WebUI {
     chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
       if (!this.tabs().some((t) => t.id == tabId)) return
       await this.renderTabs()
-      await this.updateTabShouldHideAddressBar(this.activeTab())
     })
   }
 

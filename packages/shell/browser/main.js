@@ -295,7 +295,7 @@ function logBytes(x, showAll = false) {
 }
 
 function getMemory() {
-  Object.entries(process.memoryUsage()).map(logBytes)
+  Object.entries(process.memoryUsage()).map((e) => logBytes(e))
 }
 
 class Browser {
@@ -492,6 +492,21 @@ class Browser {
       await loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, {
         allowUnpacked: true,
         filterRegex: /^(?!kc3kai).*(?:[/\\]src)?$/,
+        filterCallback: (ext) => {
+          if (ext.manifest.name === 'uBlock Origin') {
+            const version = ext.manifest.version.split('.').map((i) => parseInt(i))
+            const v = [1, 47, 4]
+            if ([0, 1].some((i) => version[i] > v[i])) {
+              const notice = `${ext.manifest.name} versions above ${v.join('.')} may cause a severe memory leak and are currently unsupported.`
+              console.error(notice)
+              console.warn(
+                `${ext.manifest.name} version ${ext.manifest.version} will not be loaded.`,
+              )
+              return false
+            }
+            return true
+          }
+        },
       })
     }
 
@@ -935,46 +950,50 @@ class Browser {
     // once we're updated and kc3 is loaded, remove the default new tab page
     // and open the kc3 start page + strat room
 
-    const kc3 = await this.session.loadExtension(kc3Path)
-    if (kc3) {
-      console.log('KC3Kai loaded! ID: ', kc3.id)
-
-      // open KC3 start page
-      kc3ExtensionId = kc3.id
-      this.currentKc3ExtensionId = kc3ExtensionId
-
-      kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
-      DMMPageUrl = 'http://www.dmm.com/netgame/social/-/gadgets/=/app_id=854854/'
-      let startTab
-
-      // TODO: remove cases for old config keys
-      if (configStore.get('kc3kai.startup.openStartPage')) {
-        configStore.delete('kc3kai.startup.openStartPage')
-        configStore.set('kc3kai.startup.gamePage', 'kc3')
-      }
-      if (configStore.get('kc3kai.startup.openDMMPage')) {
-        configStore.delete('kc3kai.startup.openDMMPage')
-        configStore.set('kc3kai.startup.gamePage', 'dmm')
-      }
-
-      switch (configStore.get('kc3kai.startup.gamePage')) {
-        case 'kc3':
-          startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
-          break
-        case 'dmm':
-          startTab = win.tabs.create({ initialUrl: DMMPageUrl })
-          break
-      }
-
-      const kc3StratRoomUrl =
-        'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
-      if (configStore.get('kc3kai.startup.openStratRoom')) {
-        const stratRoomTab = win.tabs.create({ initialUrl: kc3StratRoomUrl })
-        startTab = startTab || stratRoomTab
-      }
-
-      if (startTab) win.tabs.select(startTab.id)
+    let kc3
+    try {
+      kc3 = await this.session.loadExtension(kc3Path)
+    } catch (error) {
+      console.error(`Unable to load KC3 from ${kc3Path}. It may need to be installed/updated.`)
+      console.error(error)
+      return
     }
+    console.log('KC3Kai loaded! ID: ', kc3.id)
+
+    // open KC3 start page
+    kc3ExtensionId = kc3.id
+    this.currentKc3ExtensionId = kc3ExtensionId
+
+    kc3StartPageUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/game/direct.html'
+    DMMPageUrl = 'http://www.dmm.com/netgame/social/-/gadgets/=/app_id=854854/'
+    let startTab
+
+    // TODO: remove cases for old config keys
+    if (configStore.get('kc3kai.startup.openStartPage')) {
+      configStore.delete('kc3kai.startup.openStartPage')
+      configStore.set('kc3kai.startup.gamePage', 'kc3')
+    }
+    if (configStore.get('kc3kai.startup.openDMMPage')) {
+      configStore.delete('kc3kai.startup.openDMMPage')
+      configStore.set('kc3kai.startup.gamePage', 'dmm')
+    }
+
+    switch (configStore.get('kc3kai.startup.gamePage')) {
+      case 'kc3':
+        startTab = win.tabs.create({ initialUrl: kc3StartPageUrl })
+        break
+      case 'dmm':
+        startTab = win.tabs.create({ initialUrl: DMMPageUrl })
+        break
+    }
+
+    const kc3StratRoomUrl = 'chrome-extension://' + kc3ExtensionId + '/pages/strategy/strategy.html'
+    if (configStore.get('kc3kai.startup.openStratRoom')) {
+      const stratRoomTab = win.tabs.create({ initialUrl: kc3StratRoomUrl })
+      startTab = startTab || stratRoomTab
+    }
+
+    if (startTab) win.tabs.select(startTab.id)
   }
 }
 

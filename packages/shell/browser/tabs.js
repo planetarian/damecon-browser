@@ -84,13 +84,13 @@ class Tabs extends EventEmitter {
   select(tabId) {
     const tab = this.get(tabId)
     if (!tab) return
+    if (!this.hidden) tab.show()
     if (this.selected) {
       if (this.selected != tab) this.selected.hide()
       else return // already selected
     }
-    //console.log('>> tabs.select()', tabId)
-    if (!this.hidden) tab.show()
     this.selected = tab
+    //console.log('>> tabs.select()', tabId)
     this.emit('tab-selected', tab)
   }
 
