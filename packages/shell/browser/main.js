@@ -33,6 +33,7 @@ import { isMatch } from 'matcher'
 const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
 const cfg = configStore.all
 populateConfigDefaults(cfg)
+if (cfg.proxy.enable === 'false') cfg.proxy.enable = false // i'm stupid
 configStore.all = cfg // save with updated defaults
 
 app.commandLine.appendSwitch('force-gpu-mem-available-mb', '10000')
