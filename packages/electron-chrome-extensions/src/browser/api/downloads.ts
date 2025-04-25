@@ -70,7 +70,7 @@ export class DownloadsAPI {
     //handle('downloads.show', this.show.bind(this))
     //handle('downloads.showDefaultFolder', this.showDefaultFolder.bind(this))
     this.ctx.session.on('will-download', (ev, item, wc) => {
-      console.log('>> attempted to download', item)
+      console.log('>> attempted to download', item.getURL())
 
       const mime = item.getMimeType()
       const urlChain = item.getURLChain()
@@ -78,7 +78,11 @@ export class DownloadsAPI {
       const idx = this.pending.findIndex((p) => p.url == item.getURL())
       if (idx > -1) {
         const pend = this.pending.splice(idx, 1)[0]
-        if (pend.filename) item.setSavePath(pend.filename)
+        if (pend.filename) {
+          const relPath = pend.filename.split('/').join(path.sep).split('\\').join(path.sep)
+          const absPath = app.getPath('downloads') + path.sep + relPath
+          item.setSavePath(absPath)
+        }
       }
       const dl = new ApiDownload(
         this.nextId++,
@@ -126,6 +130,7 @@ export class DownloadsAPI {
       item.on('updated', (ev, state) => {
         const delta = updateState(state)
         console.log('* download updated', delta)
+        console.log(`  progress: ${item.getReceivedBytes()}/${item.getTotalBytes()}`)
         this.ctx.router.broadcastEvent('downloads.onChanged', dl.id, delta)
       })
 
@@ -140,7 +145,10 @@ export class DownloadsAPI {
 
       this.downloads.push(new Download(dl, item))
       this.ctx.router.broadcastEvent('downloads.onCreated', dl)
-      console.log('* all downloads:', this.downloads)
+      console.log(
+        '* all downloads:',
+        this.downloads.map((d) => d.download),
+      )
     })
   }
 
