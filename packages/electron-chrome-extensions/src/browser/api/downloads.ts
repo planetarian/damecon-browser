@@ -3,10 +3,9 @@ import { ExtensionEvent } from '../router'
 import { getAllWindows, matchesPattern, matchesTitlePattern, TabContents } from './common'
 import { WindowsAPI } from './windows'
 import { download } from 'electron-dl'
-import { app, BrowserWindow, dialog, DownloadURLOptions } from 'electron'
+import { app, BrowserWindow, dialog, shell, DownloadItem, DownloadURLOptions } from 'electron'
 import path from 'path'
 import debug from 'debug'
-import { DownloadItem } from 'electron/main'
 
 const d = debug('electron-chrome-extensions:downloads')
 
@@ -61,14 +60,15 @@ export class DownloadsAPI {
     handle('downloads.download', this.download.bind(this))
     handle('downloads.erase', this.erase.bind(this))
     //handle('downloads.getFileIcon', this.getFileIcon.bind(this))
-    //handle('downloads.open', this.open.bind(this))
+    handle('downloads.open', this.open.bind(this))
     handle('downloads.pause', this.pause.bind(this))
-    //handle('downloads.removeFile', this.removeFile.bind(this))
+    handle('downloads.removeFile', this.removeFile.bind(this))
     handle('downloads.resume', this.resume.bind(this))
     handle('downloads.search', this.search.bind(this))
+    handle('downloads.setShelfEnabled', this.setShelfEnabled.bind(this))
     //handle('downloads.setUiOptions', this.setUiOptions.bind(this))
-    //handle('downloads.show', this.show.bind(this))
-    //handle('downloads.showDefaultFolder', this.showDefaultFolder.bind(this))
+    handle('downloads.show', this.show.bind(this))
+    handle('downloads.showDefaultFolder', this.showDefaultFolder.bind(this))
     this.ctx.session.on('will-download', (ev, item, wc) => {
       console.log('>> attempted to download', item.getURL())
 
@@ -79,8 +79,11 @@ export class DownloadsAPI {
       if (idx > -1) {
         const pend = this.pending.splice(idx, 1)[0]
         if (pend.filename) {
-          const relPath = pend.filename.split('/').join(path.sep).split('\\').join(path.sep)
+          console.log('Requester suggested filename', pend.filename)
+          const relPath = pend.filename.split(/\\|\//).join(path.sep)
           const absPath = app.getPath('downloads') + path.sep + relPath
+          console.log('Requester suggested filename', pend.filename)
+          console.log('Suggested filename expanded to', absPath)
           item.setSavePath(absPath)
         }
       }
@@ -96,30 +99,37 @@ export class DownloadsAPI {
         state: 'progressing' | 'completed' | 'cancelled' | 'interrupted',
       ): chrome.downloads.DownloadDelta => {
         const delta: chrome.downloads.DownloadDelta = { id: dl.id }
-        const newState = this.convertDownloadState(state)
-        if (dl.state != newState) {
-          delta.state = { previous: dl.state, current: newState }
-          dl.state = newState
+        const canResume = item.canResume()
+        if (dl.canResume != canResume) {
+          delta.canResume = { previous: dl.canResume, current: canResume }
+          dl.canResume = canResume
+        }
+        const filename = item.getFilename()
+        if (dl.filename != filename) {
+          if (!dl.filename) {
+            delta.filename = { previous: dl.filename, current: filename }
+            dl.filename = filename
+          } else item.setSavePath(dl.filename) // don't allow it to make up its own mind
+        }
+        const mime = item.getMimeType()
+        if (dl.mime != mime) {
+          delta.mime = { previous: dl.mime, current: mime }
+          dl.mime = mime
         }
         const paused = item.isPaused()
         if (dl.paused != paused) {
           delta.paused = { previous: dl.paused, current: paused }
           dl.paused = paused
         }
-        const canResume = item.canResume()
-        if (dl.canResume != canResume) {
-          delta.canResume = { previous: dl.canResume, current: canResume }
-          dl.canResume = canResume
+        const newState = this.convertDownloadState(state)
+        if (dl.state != newState) {
+          delta.state = { previous: dl.state, current: newState }
+          dl.state = newState
         }
         const totalBytes = item.getTotalBytes()
         if (dl.totalBytes != totalBytes) {
           delta.totalBytes = { previous: dl.totalBytes, current: totalBytes }
           dl.totalBytes = totalBytes
-        }
-        const mime = item.getMimeType()
-        if (dl.mime != mime) {
-          delta.mime = { previous: dl.mime, current: mime }
-          dl.mime = mime
         }
 
         dl.bytesReceived = item.getReceivedBytes()
@@ -203,22 +213,100 @@ export class DownloadsAPI {
     this.ctx.router.broadcastEvent('downloads.onErased', dl.download.id)
   }
 
+  private async open(event: ExtensionEvent, downloadId: number) {
+    const { idx, dl } = this.getDownload(downloadId)
+    if (dl?.download.state != 'complete') return
+    await shell.openPath(dl.sessDownload.getSavePath())
+  }
+
   private pause(event: ExtensionEvent, downloadId: number) {
     const { idx, dl } = this.getDownload(downloadId)
     if (dl?.sessDownload.getState() != 'progressing' || dl?.sessDownload.isPaused()) return
     dl.sessDownload.pause()
   }
 
-  private search(
-    event: ExtensionEvent,
-    query: chrome.downloads.DownloadQuery,
-  ): chrome.downloads.DownloadItem[] {
-    return this.downloads.map((d) => d.download)
+  private removeFile(event: ExtensionEvent, downloadId: number) {
+    const { idx, dl } = this.getDownload(downloadId)
+    if (dl?.download.state != 'complete') return
+    shell.trashItem(dl.sessDownload.getSavePath())
   }
 
   private resume(event: ExtensionEvent, downloadId: number) {
     const { idx, dl } = this.getDownload(downloadId)
     if (dl?.sessDownload.getState() != 'progressing' || !dl?.sessDownload.isPaused()) return
     dl.sessDownload.resume()
+  }
+
+  private search(
+    event: ExtensionEvent,
+    query: chrome.downloads.DownloadQuery,
+  ): chrome.downloads.DownloadItem[] {
+    const isSet = (value: any) => typeof value !== 'undefined'
+
+    return this.downloads
+      .map((d) => d.download)
+      .filter((d) => {
+        if (!d) return false
+        if (!Object.keys(query).length) return true // no query criteria
+        if (isSet(query.id) && query.id !== d.id) return false
+        if (isSet(query.bytesReceived) && query.bytesReceived !== d.bytesReceived) return false
+        if (isSet(query.danger) && query.danger !== d.danger) return false
+        if (isSet(query.endTime) && query.endTime !== d.endTime) return false
+        if (
+          isSet(query.endedAfter) &&
+          (!d.endTime || new Date(query.endedAfter!) >= new Date(d.endTime))
+        )
+          return false
+        if (
+          isSet(query.endedBefore) &&
+          (!d.endTime || new Date(query.endedBefore!) <= new Date(d.endTime))
+        )
+          return false
+        if (isSet(query.error) && query.error !== d.error) return false
+        if (isSet(query.exists) && query.exists !== d.exists) return false
+        if (isSet(query.fileSize) && query.fileSize !== d.fileSize) return false
+        if (isSet(query.filename) && query.filename !== d.filename) return false
+        if (isSet(query.filenameRegex) && !new RegExp(query.filenameRegex!).test(d.filename))
+          return false
+        // finalUrl doesn't exist?
+        if (isSet(query.mime) && query.mime !== d.mime) return false
+        if (isSet(query.paused) && query.paused !== d.paused) return false
+        if (isSet(query.startTime) && query.startTime !== d.startTime) return false
+        if (
+          isSet(query.startedAfter) &&
+          (!d.startTime || new Date(query.startedAfter!) >= new Date(d.startTime))
+        )
+          return false
+        if (
+          isSet(query.startedBefore) &&
+          (!d.startTime || new Date(query.startedBefore!) <= new Date(d.startTime))
+        )
+          return false
+        if (isSet(query.state) && query.state !== d.state) return false
+        if (isSet(query.totalBytes) && query.totalBytes !== d.totalBytes) return false
+        if (isSet(query.totalBytesGreater) && query.totalBytesGreater! >= d.totalBytes) return false
+        if (isSet(query.totalBytesLess) && query.totalBytesLess! <= d.totalBytes) return false
+        if (isSet(query.url) && query.url !== d.url) return false
+        if (isSet(query.urlRegex) && !new RegExp(query.urlRegex!).test(d.url)) return false
+        // TODO: query.query
+        return true
+      })
+      .slice(0, isSet(query.limit) && query.limit! > 0 ? query.limit : undefined)
+    // TODO: query.orderBy
+  }
+
+  private setShelfEnabled(event: ExtensionEvent, enabled: boolean) {
+    // Nothing to do
+  }
+
+  private show(event: ExtensionEvent, downloadId: number) {
+    const { idx, dl } = this.getDownload(downloadId)
+    console.log('* show in folder: ', dl?.download)
+    if (dl?.download.state != 'complete') return
+    shell.showItemInFolder(dl.sessDownload.getSavePath())
+  }
+
+  private showDefaultFolder(event: ExtensionEvent) {
+    shell.openPath(app.getPath('downloads'))
   }
 }

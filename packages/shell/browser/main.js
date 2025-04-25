@@ -494,6 +494,7 @@ class Browser {
         allowUnpacked: true,
         filterRegex: /^(?!kc3kai).*(?:[/\\]src)?$/,
         filterCallback: (ext) => {
+          console.log(`Checking extension ${ext.manifest.name}`)
           if (ext.manifest.name === 'uBlock Origin') {
             const version = ext.manifest.version.split('.').map((i) => parseInt(i))
             const v = [1, 47, 4]
@@ -505,8 +506,8 @@ class Browser {
               )
               return false
             }
-            return true
           }
+          return true
         },
       })
     }
@@ -763,14 +764,24 @@ class Browser {
             if (!win) return
             const opts = {}
             const tab = win.tabs.create(opts)
-            let ogurl = details.url
-            tab.loadURL(details.url)
             if (
-              (details.url == kc3StartPageUrl || ogurl == DMMPageUrl) &&
-              configStore.get('kc3kai.startup.openDevtools')
+              process.env.SHELL_DEBUG ||
+              ((details.url == kc3StartPageUrl || details.url == DMMPageUrl) &&
+                configStore.get('kc3kai.startup.openDevtools'))
             ) {
               tab.webContents.openDevTools({ activate: true })
             }
+
+            // POST submission
+            const loadOpts = {}
+            if (details.referrer) loadOpts.httpReferrer = details.referrer
+            if (details.postBody) {
+              loadOpts.postData = details.postBody.data
+              if (details.postBody.contentType)
+                loadOpts.extraHeaders = `Content-Type: ${details.postBody.contentType}`
+            }
+
+            tab.loadURL(details.url, loadOpts)
 
             // extension popups don't auto-close when using window.open for whatever reason
             if (this.popup) {

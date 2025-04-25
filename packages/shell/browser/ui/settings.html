@@ -36,7 +36,7 @@
         <div class="menu-items">
           <!-- ko foreach: configPages -->
           <div class="menu-item"
-            data-bind="attr: { 'data-active': $parent.selectedConfigPage() === $data.id }, click: $parent.selectConfigPage">
+            data-bind="attr: { 'data-active': $parent.selectedConfigPage() === $data.id }, click: $parent.selectConfigPage.bind($parent)">
             <span class="icon">
               <!-- ko if: $data.img-->
               <img data-bind="attr: { src: img, alt: name }" alt="icon">
@@ -66,15 +66,15 @@
               <div class="process-phase" data-bind="text: phase"></div>
               <div class="process-progress" data-bind="text: progress"></div>
             </div>
-              <!-- /ko -->
+            <!-- /ko -->
             <!-- ko if: $data.total() > 0 -->
             <div class="progress">
-              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" data-bind="style: { width: progressPct() + '%'}"></div>
+              <div class="progress-bar progress-bar-striped progress-bar-animated" title="progress bar" role="progressbar" data-bind="style: { width: progressPct() + '%'}"></div>
             </div>
             <!-- /ko -->
             <!-- ko if: $data.total() === 0 -->
             <div class="progress">
-              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+              <div class="progress-bar progress-bar-striped progress-bar-animated" title="progress bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             <!-- /ko -->
           </div>
@@ -151,7 +151,7 @@
         <div class="form-group">
           <label for="kc3custom1location">Location</label>
           <div class="input-group">
-            <input type="text" id="kc3custom1location" class="form-control" data-bind="value: config.kc3kai.update.custom1Location"/>
+            <input type="text" id="kc3custom1location" class="form-control" data-bind="value: config.kc3kai.custom1Location"/>
             <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
           </div>
         </div>
@@ -160,7 +160,7 @@
         <div class="form-group">
           <label for="kc3custom2location">Location</label>
           <div class="input-group">
-            <input type="text" id="kc3custom2location" class="form-control" data-bind="value: config.kc3kai.update.custom2Location"/>
+            <input type="text" id="kc3custom2location" class="form-control" data-bind="value: config.kc3kai.custom2Location"/>
             <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
           </div>
         </div>
@@ -191,6 +191,63 @@
           <input class="form-check-input" id="proxyclientenable" type="checkbox" data-bind="checked: config.proxy.client.enable"></input>
           <label class="form-check-label" for="proxyclientenable">Enabled</label>
         </div>
+      </div>
+    </script>
+    <script type="text/html" id="settings-content-3">
+      <h3>Downloads <button type="button" class="btn btn-secondary btn-sm" data-bind="click: () => chrome.downloads.showDefaultFolder()" title="open downloads folder"><i class="fa-solid fa-folder"></i></button></h3>
+      <div class="settings-group form-items-scroller">
+        <!-- ko foreach: downloads -->
+        <div class="download-item" data-bind="click: open">
+          <div class="download-info">
+            <span class="download-label">
+              <label class="filename" data-bind="text: file"></label>
+              <span class="bytes-received">
+                <!-- ko if: state() == 'in_progress' && totalBytes() > 0 -->
+                <label data-bind="text: `${received()}/${total()}`"></label>
+                <!-- /ko -->
+                <!-- ko if: state() == 'in_progress' && !totalBytes -->
+                <label data-bind="text: `${received()}`"></label>
+                <!-- /ko -->
+                <!-- ko if: ['complete','interrupted'].includes(state()) -->
+                <label data-bind="text: `${total()} (${state()})`"></label>
+                <!-- /ko -->
+              </span>
+            </span>
+            <div class="controls">
+              <!-- ko if: state() === 'in_progress' && !paused() -->
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: pause, clickBubble: false" title="pause"><i class="fa-solid fa-pause"></i></button>
+              <!-- /ko --> 
+              <!-- ko if: canResume() -->
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: resume, clickBubble: false" title="resume"><i class="fa-solid fa-play"></i></button>
+              <!-- /ko -->
+              <!-- ko if: state() === 'complete' -->
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: openFolder, clickBubble: false" title="show in folder"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-bind="click: deleteFile, clickBubble: false" title="delete file"><i class="fa-solid fa-trash"></i></button>
+              <!-- /ko -->
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: erase, clickBubble: false" title="remove entry"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+          <div class="download-progress">
+            <!-- ko if: typeof progressPct() !== 'undefined' && progressPct() < 1 -->
+            <div class="progress">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" title="progress bar" role="progressbar" data-bind="style: { width: progressPct()*100 + '%'}"></div>
+            </div>
+            <!-- /ko -->
+            <!-- ko if: typeof progressPct() === 'undefined' -->
+            <div class="progress">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" title="progress bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <!-- /ko -->
+          </div>
+        </div>
+        <!-- /ko -->
+        <!-- ko if: !downloads().length -->
+        <div class="form-group">
+          <div>
+            <label>When you download files, they'll show up here.</label>
+          </div>
+        </div>
+        <!-- /ko -->
       </div>
     </script>
   </div>

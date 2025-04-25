@@ -37,8 +37,6 @@ const configSchema = {
         options: ['release', 'master', 'develop', 'custom1', 'custom2'],
         default: 'release',
       },
-      custom1Location: { type: 'string' },
-      custom2Location: { type: 'string' },
       schedule: {
         type: 'option',
         options: ['startup', 'daily', 'weekly', 'manual'],
@@ -46,6 +44,8 @@ const configSchema = {
       },
       auto: { type: 'bool', default: true },
     },
+    custom1Location: { type: 'string' },
+    custom2Location: { type: 'string' },
   },
   proxy: {
     client: {

@@ -1,5 +1,5 @@
 import { ipcRenderer, contextBridge, webFrame } from 'electron'
-import { addExtensionListener, removeExtensionListener } from './event'
+import { addExtensionListener, hasExtensionListener, removeExtensionListener } from './event'
 
 export const injectExtensionAPIs = () => {
   interface ExtensionMessageOptions {
@@ -84,6 +84,7 @@ export const injectExtensionAPIs = () => {
   const electronContext = {
     invokeExtension,
     addExtensionListener,
+    hasExtensionListener,
     removeExtensionListener,
     connectNative,
     disconnectNative,
@@ -138,7 +139,9 @@ export const injectExtensionAPIs = () => {
         throw new Error('Method not implemented.')
       }
       hasListener(callback: T): boolean {
-        throw new Error('Method not implemented.')
+        // TODO? not too sure
+        return electron.hasExtensionListener(extensionId, this.name)
+        //throw new Error('Method not implemented.')
       }
       removeRules(ruleIdentifiers?: string[] | undefined, callback?: (() => void) | undefined): void
       removeRules(callback?: (() => void) | undefined): void
@@ -392,14 +395,15 @@ export const injectExtensionAPIs = () => {
             download: invokeExtension('downloads.download'),
             erase: invokeExtension('downloads.erase'),
             getFileIcon: invokeExtension('downloads.getFileIcon', { noop: true }),
-            open: invokeExtension('downloads.open', { noop: true }),
+            open: invokeExtension('downloads.open'),
             pause: invokeExtension('downloads.pause'),
-            removeFile: invokeExtension('downloads.removeFile', { noop: true }),
+            removeFile: invokeExtension('downloads.removeFile'),
             resume: invokeExtension('downloads.resume'),
             search: invokeExtension('downloads.search'),
+            setShelfEnabled: invokeExtension('downloads.setShelfEnabled'), // deprecated
             setUiOptions: invokeExtension('downloads.setUiOptions', { noop: true }),
-            show: invokeExtension('downloads.show', { noop: true }),
-            showDefaultFolder: invokeExtension('downloads.showDefaultFolder', { noop: true }),
+            show: invokeExtension('downloads.show'),
+            showDefaultFolder: invokeExtension('downloads.showDefaultFolder'),
             onChanged: new ExtensionEvent('downloads.onChanged'),
             onCreated: new ExtensionEvent('downloads.onCreated'),
             onDeterminingFilename: new ExtensionEvent('downloads.onDeterminingFilename'),

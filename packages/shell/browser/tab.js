@@ -40,9 +40,9 @@ class Tab {
     this.view = undefined
   }
 
-  loadURL(url) {
+  loadURL(url, options) {
     //console.log('>> tab.loadURL()', url)
-    return this.view.webContents.loadURL(url)
+    return this.view.webContents.loadURL(url, options)
   }
 
   show() {

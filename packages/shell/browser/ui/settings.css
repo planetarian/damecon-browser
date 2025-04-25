@@ -60,7 +60,7 @@
   justify-content: center;
   height: 48px;
   width: 48px;
-  font-size: 34pt;
+  font-size: 30pt;
 }
 
 #settings-container {
@@ -116,6 +116,66 @@
   width: 40px;
 }
 
+.download-item {
+  padding: 6px;
+  margin-bottom: 0;
+  min-height: 40px;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+}
+.download-item label {
+  cursor: pointer;
+}
+.download-info {
+  display: flex;
+  padding-left: 4px;
+}
+.download-item:hover {
+  background: var(--content-hover-color);
+}
+.download-item .download-label {
+  font-size: small;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.download-item .download-label label {
+  margin: 0;
+}
+.download-item .controls {
+  display: flex;
+  flex-wrap: nowrap;
+}
+.download-item button {
+  margin-left: 2px;
+  width: 28px;
+  height: 28px;
+  font-size: 8pt;
+  display: none;
+}
+.download-item:hover button {
+  display: inline;
+}
+.download-item .download-progress {
+  position: absolute;
+  bottom: 4px;
+  width: calc(100% - 90px);
+  left: 9px;
+}
+.download-item .progress {
+  height: 2px;
+}
+.download-info .bytes-received {
+  opacity: 0.5;
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+h3 button {
+  margin-top: -10px;
+}
+
 #background-processes {
   flex: 0 1 auto;
   min-width: 50%;
@@ -152,4 +212,5 @@
 
 #background-processes .progress-bar {
   background-color: var(--chrome-bg-color);
+  width: 100%;
 }

@@ -7,6 +7,8 @@ const listenerMap = new Map<string, number>()
 export const addExtensionListener = (extensionId: string, name: string, callback: Function) => {
   const listenerCount = listenerMap.get(name) || 0
 
+  console.log(`adding extension listener for ${extensionId} - ${name}`)
+
   if (listenerCount === 0) {
     // TODO: should these IPCs be batched in a microtask?
     ipcRenderer.send('crx-add-listener', extensionId, name)
@@ -20,6 +22,8 @@ export const addExtensionListener = (extensionId: string, name: string, callback
     }
     callback(...args)
   })
+
+  console.log('ipcRenderer.listeners', ipcRenderer.listeners(name))
 }
 
 export const removeExtensionListener = (extensionId: string, name: string, callback: any) => {
@@ -36,4 +40,8 @@ export const removeExtensionListener = (extensionId: string, name: string, callb
   }
 
   ipcRenderer.removeListener(formatIpcName(name), callback)
+}
+
+export const hasExtensionListener = (extensionId: string, name: string): boolean => {
+  return listenerMap.has(name)
 }

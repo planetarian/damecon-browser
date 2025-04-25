@@ -50,6 +50,7 @@
   :root {
     --content-bg-color: #f7f7f7;
     --content-fg-color: #ffffff;
+    --content-hover-color: #7f7f7f0a;
     --content-text-color: #202020;
     --content-link-color: #1692f2;
     --content-link-color-hover: #1056b2;
@@ -62,6 +63,7 @@
   :root {
     --content-bg-color: #323232;
     --content-fg-color: #3a3a3a;
+    --content-hover-color: #7f7f7f0a;
     --content-text-color: #ececec;
     --content-link-color: #4db2ff;
     --content-link-color-hover: #80c8ff;
