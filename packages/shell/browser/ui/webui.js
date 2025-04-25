@@ -20,6 +20,8 @@ class WebUI {
     this.activeTabId() > 0 ? this.tabs().find((t) => t.id === this.activeTabId()) : null,
   )
 
+  downloads = ko.observableArray([])
+
   activeTabId = ko.observable(-1)
   heldTabId = -1
   closingTabId = -1
@@ -67,6 +69,9 @@ class WebUI {
     // wait for initial tab to load
     await sleep(100)
     await this.initTabs()
+
+    var downloads = await chrome.downloads.search({})
+    this.downloads(downloads)
   }
 
   async initTheme() {
@@ -184,6 +189,10 @@ class WebUI {
       if (!this.tabs().some((t) => t.id == tabId)) return
       await this.renderTabs()
     })
+
+    chrome.downloads.onCreated.addListener((ev, downloadItem) => {})
+    chrome.downloads.onChanged.addListener((ev, downloadDelta) => {})
+    chrome.downloads.onErased.addListener((ev, downloadId) => {})
   }
 
   async sendTopbarSize() {
