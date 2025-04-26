@@ -171,6 +171,9 @@
   display: flex;
   flex-wrap: nowrap;
 }
+.download-info .bytes-received label {
+  margin-right: 4px;
+}
 
 h3 button {
   margin-top: -10px;

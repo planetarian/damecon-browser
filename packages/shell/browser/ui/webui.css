@@ -452,3 +452,15 @@ browser-action-list::part(action):hover {
   z-index: 3;
   display: none;
 }
+
+.progress-circle {
+  width: 24px;
+  height: 24px;
+  -webkit-mask-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='50%25' cy='50%25' r='45%25' fill='none' stroke='black' stroke-width='2'/%3e%3c/svg%3e");
+  position: absolute;
+}
+.progress-content {
+  background: conic-gradient(white 0% calc(var(--pct) * 1%), #ffffff1f calc(var(--pct) * 1%) 100%);
+  width: 100%;
+  height: 100%;
+}

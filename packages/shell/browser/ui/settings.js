@@ -22,8 +22,8 @@ class Settings {
     {
       id: 3,
       name: 'Downloads',
-      //img: 'assets/icons/kccp.png',
-      faIcon: 'fa-solid fa-download',
+      img: 'assets/icons/download_icon_48.png',
+      //faIcon: 'fa-solid fa-download',
     },
   ]
 

@@ -20,7 +20,13 @@
               <li data-bind="attr: { class: `tab-container tab-separator-${separator()}${active() ? ' tab-active' : ''}${url==$parent.settingsUrl ? ' tab-compact' : ''}`},
                 event: { mousedown: $parent.tabMouseDown.bind($parent), mousemove: $parent.tabMouseMove.bind($parent), mouseout: $parent.tabMouseOut.bind($parent), mouseup: $parent.tabMouseUp.bind($parent) }">
                 <div class="tab">
-                  <!-- ko if: favIconUrl -->
+                  <!-- ko if: !$index() && $parent.downloads().length -->
+                  <img class="favicon" src="assets/icons/download_icon_48.png" alt="active downloads" />
+                  <div class="progress-circle">
+                    <div class="progress-content" data-bind="style: { '--pct': $parent.downloadPct() }"></div>
+                  </div>
+                  <!-- /ko -->
+                  <!-- ko if: ($index() || !$parent.downloads().length) && favIconUrl --> 
                   <img class="favicon" data-bind="attr: { src: favIconUrl }" alt="page icon" />
                   <!-- /ko -->
                   <span class="title" data-bind="text: title"></span>

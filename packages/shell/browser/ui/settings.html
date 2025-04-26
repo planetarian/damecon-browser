@@ -206,10 +206,14 @@
                 <label data-bind="text: `${received()}/${total()}`"></label>
                 <!-- /ko -->
                 <!-- ko if: state() == 'in_progress' && !totalBytes -->
-                <label data-bind="text: `${received()}`"></label>
+                <label data-bind="text: received"></label>
                 <!-- /ko -->
                 <!-- ko if: ['complete','interrupted'].includes(state()) -->
-                <label data-bind="text: `${total()} (${state()})`"></label>
+                <label data-bind="text: total"></label>
+                <label data-bind="text: `(${state()})`"></label>
+                <!-- /ko -->
+                <!-- ko if: paused() -->
+                <label data-bind="text: ' (paused)'"></label> 
                 <!-- /ko -->
               </span>
             </span>

@@ -5,6 +5,26 @@ ko.bindingHandlers.rendered = {
   },
 }
 
+ko.bindingHandlers['style'] = {
+  update: function (element, valueAccessor) {
+    var value = ko.utils.unwrapObservable(valueAccessor() || {})
+    ko.utils.objectForEach(value, function (styleName, styleValue) {
+      styleValue = ko.utils.unwrapObservable(styleValue)
+
+      if (styleValue === null || styleValue === undefined || styleValue === false) {
+        // Empty string removes the value, whereas null/undefined have no effect
+        styleValue = ''
+      }
+
+      if (styleName.substring(0, 2) === '--') {
+        element.style.setProperty(styleName, styleValue)
+      } else {
+        element.style[styleName] = styleValue
+      }
+    })
+  },
+}
+
 class WebUITab {
   inputUrl = ko.observable()
 }
@@ -21,6 +41,9 @@ class WebUI {
   )
 
   downloads = ko.observableArray([])
+  downloadPct = ko.observable(0)
+  bytesReceived = ko.observable(0)
+  bytesTotal = ko.observable()
 
   activeTabId = ko.observable(-1)
   heldTabId = -1
@@ -71,7 +94,11 @@ class WebUI {
     await this.initTabs()
 
     var downloads = await chrome.downloads.search({})
-    this.downloads(downloads)
+    if (downloads.some((d) => d.state == 'in_progress')) {
+      downloads = downloads.filter((d) => ['in_progress', 'complete'].includes(d.state))
+      this.downloads(downloads)
+    }
+    this.updateDownloadStats()
   }
 
   async initTheme() {
@@ -154,6 +181,16 @@ class WebUI {
     resizeObserver.observe(document.getElementById('topbar-container'))
   }
 
+  updateDownloadStats() {
+    this.bytesReceived(this.downloads().reduce((sum, dl) => sum + dl.bytesReceived, 0))
+    this.bytesTotal(
+      this.downloads().length > 0
+        ? this.downloads().reduce((sum, dl) => sum + dl.totalBytes, 0)
+        : undefined,
+    )
+    this.downloadPct((this.bytesReceived() / this.bytesTotal()) * 100)
+  }
+
   async setupBrowserListeners() {
     chrome.tabs.onCreated.addListener(async (tab) => {
       if (tab.windowId !== this.windowId()) return
@@ -190,9 +227,34 @@ class WebUI {
       await this.renderTabs()
     })
 
-    chrome.downloads.onCreated.addListener((ev, downloadItem) => {})
-    chrome.downloads.onChanged.addListener((ev, downloadDelta) => {})
-    chrome.downloads.onErased.addListener((ev, downloadId) => {})
+    chrome.downloads.onCreated.addListener((ev, downloadItem) => {
+      if (!this.downloads().some((d) => d.state == 'in_progress')) {
+        this.downloads([])
+      }
+      if (downloadItem.totalBytes) this.downloads.push(downloadItem)
+      this.updateDownloadStats()
+    })
+    chrome.downloads.onChanged.addListener(async (downloadId, delta) => {
+      const existing = this.downloads().find((d) => d.id == downloadId)
+      if (existing) this.downloads.remove(existing)
+
+      const results = await chrome.downloads.search({ id: downloadId })
+      if (!results.length) {
+        console.error(
+          'received update for download but downloads api returned no results for its ID.',
+          delta,
+        )
+        return
+      }
+      const dl = results[0]
+      if (['in_progress', 'complete'].includes(dl.state)) this.downloads.push(dl)
+      this.updateDownloadStats()
+    })
+    chrome.downloads.onErased.addListener((downloadId) => {
+      const existing = this.downloads().find((d) => d.id == downloadId)
+      if (existing) this.downloads.remove(existing)
+      this.updateDownloadStats()
+    })
   }
 
   async sendTopbarSize() {
@@ -290,7 +352,14 @@ class WebUI {
   tabMouseUp(tab, ev) {
     if (ev.button === 1 && this.closingTabId == tab.id) chrome.tabs.remove(tab.id)
     else if (ev.button === 0) {
-      if (this.heldTabId == tab.id) chrome.tabs.update(tab.id, { active: true })
+      if (this.heldTabId == tab.id) {
+        chrome.tabs.update(tab.id, { active: true })
+        if (
+          !this.downloads().some((d) => d.state == 'in_progress') &&
+          [tab.url, this.activeTab().url].includes(this.settingsUrl)
+        )
+          this.downloads([])
+      }
       this.heldTabId = -1
     }
     return true

@@ -22,8 +22,6 @@ export const addExtensionListener = (extensionId: string, name: string, callback
     }
     callback(...args)
   })
-
-  console.log('ipcRenderer.listeners', ipcRenderer.listeners(name))
 }
 
 export const removeExtensionListener = (extensionId: string, name: string, callback: any) => {
