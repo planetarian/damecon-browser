@@ -564,6 +564,7 @@ export const injectExtensionAPIs = () => {
                 )
               }
             },
+            captureVisibleTab: invokeExtension('tabs.captureVisibleTab'),
             get: invokeExtension('tabs.get'),
             getCurrent: invokeExtension('tabs.getCurrent'),
             getAllInWindow: invokeExtension('tabs.getAllInWindow'),

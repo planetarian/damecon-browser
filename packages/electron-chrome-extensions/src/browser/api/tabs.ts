@@ -1,6 +1,12 @@
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { getAllWindows, matchesPattern, matchesTitlePattern, TabContents } from './common'
+import {
+  getAllWindows,
+  ImageDetails,
+  matchesPattern,
+  matchesTitlePattern,
+  TabContents,
+} from './common'
 import { WindowsAPI } from './windows'
 import debug from 'debug'
 
@@ -49,6 +55,7 @@ export class TabsAPI {
 
   constructor(private ctx: ExtensionContext) {
     const handle = this.ctx.router.apiHandler()
+    handle('tabs.captureVisibleTab', this.captureVisibleTab.bind(this))
     handle('tabs.get', this.get.bind(this))
     handle('tabs.getAllInWindow', this.getAllInWindow.bind(this))
     handle('tabs.getCurrent', this.getCurrent.bind(this))
@@ -153,6 +160,17 @@ export class TabsAPI {
     }
     const details = this.createTabDetails(tab)
     return details
+  }
+
+  private async captureVisibleTab(event: ExtensionEvent, windowId: number, options: ImageDetails) {
+    if (windowId === TabsAPI.WINDOW_ID_CURRENT) windowId = this.ctx.store.lastFocusedWindowId!
+    const win = this.ctx.store.getWindowById(windowId)
+    if (!win) throw new Error(`Couldn't find a window with ID ${windowId}`)
+    const tab = this.ctx.store.getActiveTabFromWindow(win)
+    if (!tab) throw new Error(`Couldn't find an active tab for window ID ${windowId}`)
+    const capture = await tab.capturePage()
+    const dataUrl = capture.toDataURL()
+    return dataUrl
   }
 
   private get(event: ExtensionEvent, tabId: number) {

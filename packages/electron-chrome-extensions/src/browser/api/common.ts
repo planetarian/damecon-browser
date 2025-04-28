@@ -6,6 +6,13 @@ export interface TabContents extends Electron.WebContents {
   favicon?: string
 }
 
+export type ImageFormat = 'jpeg' | 'png'
+
+export interface ImageDetails {
+  format?: ImageFormat
+  quality?: number
+}
+
 export type ContextMenuType =
   | 'all'
   | 'page'

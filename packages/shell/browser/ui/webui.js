@@ -227,17 +227,18 @@ class WebUI {
       await this.renderTabs()
     })
 
-    chrome.downloads.onCreated.addListener((ev, downloadItem) => {
+    chrome.downloads.onCreated.addListener((dl) => {
       if (!this.downloads().some((d) => d.state == 'in_progress')) {
         this.downloads([])
       }
-      if (downloadItem.totalBytes) this.downloads.push(downloadItem)
+      if (dl.totalBytes) {
+        const existing = this.downloads().find((d) => d.id == dl.id)
+        if (existing) this.downloads.replace(existing, dl)
+        else this.downloads.push(dl)
+      }
       this.updateDownloadStats()
     })
     chrome.downloads.onChanged.addListener(async (downloadId, delta) => {
-      const existing = this.downloads().find((d) => d.id == downloadId)
-      if (existing) this.downloads.remove(existing)
-
       const results = await chrome.downloads.search({ id: downloadId })
       if (!results.length) {
         console.error(
@@ -247,7 +248,11 @@ class WebUI {
         return
       }
       const dl = results[0]
-      if (['in_progress', 'complete'].includes(dl.state)) this.downloads.push(dl)
+      const existing = this.downloads().find((d) => d.id == downloadId)
+      if (['in_progress', 'complete'].includes(dl.state)) {
+        if (existing) this.downloads.replace(existing, dl)
+        else this.downloads.push(dl)
+      } else if (existing) this.downloads.remove(existing)
       this.updateDownloadStats()
     })
     chrome.downloads.onErased.addListener((downloadId) => {
