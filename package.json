@@ -7,7 +7,8 @@
     "packages/shell",
     "packages/electron-chrome-extensions",
     "packages/electron-chrome-context-menu",
-    "packages/electron-chrome-web-store"
+    "packages/electron-chrome-web-store",
+    "packages/kccacheproxy"
   ],
   "scripts": {
     "build": "yarn run build:context-menu && yarn run build:chrome-web-store && yarn run build:extensions && yarn run build:shell",

@@ -49,7 +49,9 @@ class KC3Updater {
   }
 
   async update(extensionsPath, channel) {
-    fs.mkdirSync(extensionsPath)
+    try {
+      fs.mkdirSync(extensionsPath)
+    } catch (err) {}
 
     const dir = path.join(extensionsPath, 'kc3kai-' + channel)
 

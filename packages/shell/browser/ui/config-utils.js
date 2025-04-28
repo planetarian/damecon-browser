@@ -29,7 +29,6 @@ const configSchema = {
   kc3kai: {
     startup: {
       gamePage: { type: 'option', options: ['none', 'kc3', 'dmm'], default: 'kc3' },
-
       openStartPage: { type: 'bool' }, // TODO: remove
       openDMMPage: { type: 'bool' }, // TODO: remove
       openDevtools: { type: 'bool', default: true },
@@ -52,6 +51,7 @@ const configSchema = {
     custom2Location: { type: 'string' },
   },
   proxy: {
+    mode: { type: 'option', options: ['client', 'internal'], default: 'client' },
     client: {
       host: { type: 'string', default: '127.0.0.1' },
       port: { type: 'number', default: 8081 },

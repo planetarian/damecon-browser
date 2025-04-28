@@ -1,6 +1,5 @@
 import path from 'path'
 import fsSync from 'fs'
-import url from 'url'
 import {
   app,
   session,
@@ -11,6 +10,7 @@ import {
   nativeTheme,
   dialog,
 } from 'electron'
+// damecon config
 import ConfigStore from 'configstore'
 import { configSchema, populateConfigDefaults } from './ui/config-utils.js'
 
@@ -22,13 +22,19 @@ import { buildChromeContextMenu } from 'electron-chrome-context-menu'
 import setupMenu from './menu'
 import Tabs from './tabs'
 
-import './workers/worker-shim'
-import kc3UpdateWorker from 'worker-loader!./workers/kc3update-worker.js'
-
 import { setTimeout } from 'timers/promises'
 import { debug } from 'console'
 
+// for wildcard matching URLs to hide address bar for
 import { isMatch } from 'matcher'
+
+// KC3
+import './workers/worker-shim'
+import kc3UpdateWorker from 'worker-loader!./workers/kc3update-worker.js'
+
+// KCCP
+import ipcKccp from '../../kccacheproxy/src/proxy/ipc.js'
+import kccpConfig from '../../kccacheproxy/src/proxy/config.js'
 
 const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
 const cfg = configStore.all
@@ -68,12 +74,10 @@ const PATHS = {
   //KC3_EXTENSIONS: path.join(ROOT_DIR, 'ext_kc3kai'),
 }
 
-//*
 console.log(`Is packaged: ${app.isPackaged}`)
 console.log(`SHELL_ROOT_DIR: ${SHELL_ROOT_DIR}`)
 console.log(`ROOT_DIR: ${ROOT_DIR}`)
 console.log(`PATHS:`, PATHS)
-//*/
 
 let webuiExtensionId
 let webuiUrl
@@ -93,51 +97,9 @@ const manifestExists = async (dirPath) => {
   }
 }
 
-async function loadExtensions(session, extensionsPath) {
-  const subDirectories = await fs.readdir(extensionsPath, {
-    withFileTypes: true,
-  })
-
-  const extensionDirectories = await Promise.all(
-    subDirectories
-      .filter((dirEnt) => dirEnt.isDirectory())
-      .map(async (dirEnt) => {
-        if (dirEnt.name.startsWith('kc3kai-')) return false
-
-        const extPath = path.join(extensionsPath, dirEnt.name)
-
-        if (await manifestExists(extPath)) {
-          return extPath
-        }
-
-        const extSubDirs = await fs.readdir(extPath, {
-          withFileTypes: true,
-        })
-
-        const versionDirPath =
-          extSubDirs.length === 1 && extSubDirs[0].isDirectory()
-            ? path.join(extPath, extSubDirs[0].name)
-            : null
-
-        if (await manifestExists(versionDirPath)) {
-          return versionDirPath
-        }
-      }),
-  )
-
-  const results = []
-
-  for (const extPath of extensionDirectories.filter(Boolean)) {
-    console.log(`Loading extension from ${extPath}`)
-    try {
-      const extensionInfo = await session.loadExtension(extPath)
-      results.push(extensionInfo)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  return results
+const initKccp = function () {
+  ipcKccp.registerElectron(ipcMain, app)
+  kccpConfig.loadConfig(app)
 }
 
 const getParentWindowOfTab = (tab) => {
@@ -329,6 +291,17 @@ class Browser {
     })
 
     app.on('web-contents-created', this.onWebContentsCreated.bind(this))
+
+    // only allow one instance to run for now
+    if (!app.requestSingleInstanceLock()) {
+      app.quit()
+      return
+    }
+    app.on('second-instance', () => {
+      const mainWindow = this.windows[0].window
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.show()
+    })
   }
 
   destroy() {
