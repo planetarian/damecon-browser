@@ -32,8 +32,7 @@ class WebUITab {
 class WebUI {
   windowId = ko.observable(-1)
 
-  theme = ko.observable('andra')
-  brightness = ko.observable('system')
+  config = ko.observable()
 
   tabs = ko.observableArray([])
   activeTab = ko.pureComputed(() =>
@@ -88,7 +87,7 @@ class WebUI {
     this.windowId(windowId)
 
     //console.log('>> init()', windowId)
-    await this.initTheme()
+    await this.getConfig()
     // wait for initial tab to load
     await sleep(100)
     await this.initTabs()
@@ -101,11 +100,9 @@ class WebUI {
     this.updateDownloadStats()
   }
 
-  async initTheme() {
-    const theme = await this.sendToMain('get-config-item', { key: 'window.style.theme' })
-    this.theme(theme)
-    const brightness = await this.sendToMain('get-config-item', { key: 'window.style.brightness' })
-    this.brightness(brightness)
+  async getConfig() {
+    const config = await this.sendToMain('get-config')
+    this.config(config)
   }
 
   async initTabs() {
@@ -304,6 +301,7 @@ class WebUI {
 
   async receiveFromRenderer(msg) {
     switch (msg.type) {
+      case 'get-damecon-version':
       case 'get-config':
       case 'get-config-item':
       case 'kc3-doupdate':
@@ -312,8 +310,7 @@ class WebUI {
         return this.sendToMain(msg.type, msg.data)
       case 'set-config-item':
         const result = await this.sendToMain(msg.type, msg.data)
-        if (msg.data.key == 'window.style.theme') this.theme(msg.data.value)
-        if (msg.data.key == 'window.style.brightness') this.brightness(msg.data.value)
+        await this.getConfig()
         return result
       default:
         throw new Error(

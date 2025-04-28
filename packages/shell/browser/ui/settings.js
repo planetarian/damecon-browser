@@ -29,6 +29,8 @@ class Settings {
 
   config = {}
 
+  version = ''
+
   selectedConfigPage = ko.observable(0)
 
   // This sets up the mappings between knockout properties and config keys.
@@ -42,14 +44,13 @@ class Settings {
       !!this.newHideAddressBarSite() &&
       (!this.config.window.view.hideAddressBarSites() ||
         !this.config.window.view.hideAddressBarSites().includes(this.newHideAddressBarSite())),
+    this,
   )
 
   kc3IsUpdating = ko.observable(false)
   kc3UpdatingChannel = ko.observable('')
-  canSetKc3Channel = ko.computed(() => !this.kc3IsUpdating())
-  canUpdateKc3 = ko.computed(
-    () => !this.kc3IsUpdating() && !!this.config?.kc3kai?.update?.channel(),
-  )
+  canSetKc3Channel = ko.computed(() => !this.kc3IsUpdating(), this)
+  canUpdateKc3 = ko.observable(true)
 
   downloads = ko.observableArray([])
 
@@ -110,6 +111,7 @@ class Settings {
         if (Array.isArray(newValue))
           newValue = newValue.map((v) => (typeof v === 'function' ? v() : v))
         configStore.set(path, newValue)
+        if (path == 'kc3kai.update.channel') this.setCanUpdateKc3()
       })
     }
 
@@ -232,12 +234,12 @@ class Settings {
     dl.pause = () => chrome.downloads.pause(dl.id())
     dl.resume = () => chrome.downloads.resume(dl.id())
     dl.deleteFile = () => chrome.downloads.removeFile(dl.id())
-    dl.erase = () => chrome.downloads.erase(dl.id())
+    dl.erase = () => chrome.downloads.erase({ id: dl.id() })
     return dl
   }
 
   addBrowserListeners() {
-    chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       ;(async () => {
         let result
         try {
@@ -310,12 +312,21 @@ class Settings {
     })
   }
 
+  async clearFinishedDownloads() {
+    await chrome.downloads.erase({ state: 'complete' })
+    await chrome.downloads.erase({ state: 'interrupted' })
+  }
+
+  setCanUpdateKc3() {
+    this.canUpdateKc3(!this.kc3IsUpdating() && !!this.config?.kc3kai?.update.channel())
+  }
+
   constructor() {
     this.init()
   }
   async init() {
-    this.canSetKc3Channel.subscribe((newValue) => console.log('canSetKc3Channel:', newValue))
-    this.canUpdateKc3.subscribe((newValue) => console.log('canUpdateKc3:', newValue))
+    this.version = await sendMessage('get-damecon-version')
+
     this.config = await this.prepConfigProperties()
     console.log('done prepping config', this.config)
     this.settingsInitialized(true)
@@ -326,6 +337,7 @@ class Settings {
     this.addBrowserListeners()
 
     const updateStatus = await sendMessage('kc3-get-isupdating')
+    this.kc3IsUpdating.subscribe((newValue) => this.setCanUpdateKc3())
     this.kc3IsUpdating(updateStatus.isUpdating)
     this.kc3UpdatingChannel(updateStatus.channel)
   }

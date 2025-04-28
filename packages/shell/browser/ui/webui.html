@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="webui.css" />
   </head>
   <body>
-    <!-- ko if: windowId() > 0 -->
-    <div id="root" data-bind="attr: { class: `platform-${platform} theme-${theme()} brightness-${brightness()}` }">
+    <!-- ko if: config() && windowId() > 0 -->
+    <div id="root" data-bind="attr: { class: `platform-${platform} theme-${config().window.style.theme} brightness-${config().window.style.brightness}` }">
       <div id="topbar-container" data-bind="rendered: setTopbarObserver.bind($data)">
         <div id="topbar">
           <div id="tabstrip">
@@ -54,12 +54,26 @@
             </button>
             <div class="app-drag app-drag-right"></div>
             <div class="window-controls">
+              <!-- ko if: !activeTab()?.showAddressBar() -->
+              <!-- ko if: config().window.view.alwaysShowExtensions --> 
+              <browser-action-list id="actions"></browser-action-list>
+              <!-- /ko -->
+              <!-- ko if: config().window.view.alwaysShowBack -->
+              <button id="goback" type="button" class="control" title="go back" data-bind="click: browserActionGoBack"><i class="fa-solid fa-arrow-left"></i></button>
+              <!-- /ko -->
+              <!-- ko if: config().window.view.alwaysShowForward -->
+              <button id="goforward" type="button" class="control" title="go forward" data-bind="click: browserActionGoForward"><i class="fa-solid fa-arrow-right"></i></button>
+              <!-- /ko -->
+              <!-- ko if: config().window.view.alwaysShowReload -->
+              <button id="reload" type="button" class="control" title="reload" data-bind="click: browserActionReload"><i class="fa-solid fa-rotate-right"></i></button>
+              <!-- /ko -->
+              <!-- /ko -->
               <button id="minimize" type="button" class="control" title="minimize" data-bind="click: windowActionMinimize"><i class="fa-regular fa-window-minimize fa-xs"></i></button>
               <button id="maximize" type="button" class="control" title="maximize" data-bind="click: windowActionMaximize"><i class="fa-regular fa-square-full fa-2xs"></i></button>
               <button id="close" type="button" class="control" title="close" data-bind="click: windowActionClose"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
-          <!-- ko if: activeTab()?.showAddressBar -->
+          <!-- ko if: activeTab()?.showAddressBar() -->
           <div class="toolbar">
             <div class="page-controls">
               <button id="goback" type="button" class="control" title="go back" data-bind="click: browserActionGoBack"><i class="fa-solid fa-arrow-left"></i></button>

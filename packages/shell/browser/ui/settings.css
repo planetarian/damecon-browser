@@ -9,16 +9,21 @@
 #settings {
   width: 100%;
   overflow-y: auto;
+  flex: 1 1 auto;
 }
 
 #settings-menu {
   width: 100px;
   padding-left: 6px;
   flex: 0 1 auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 6px 0;
 }
 
 #settings-menu .menu-header {
-  padding-top: 55px;
+  padding-top: 10px;
 }
 
 #settings-menu .menu-header * {
@@ -28,9 +33,10 @@
 #settings-menu .menu-items {
   display: flex;
   flex-direction: column;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   width: 100%;
   gap: 8px;
+  overflow-y: auto;
 }
 
 #settings-menu .menu-item {
@@ -61,6 +67,15 @@
   height: 48px;
   width: 48px;
   font-size: 30pt;
+}
+
+#version {
+  width: 110%;
+  padding: 0 5px;
+  color: var(--chrome-bg-color);
+  font-size: 9pt;
+  white-space: nowrap;
+  text-shadow: 1px 1px 1px var(--control-hover-layered-bg-color);
 }
 
 #settings-container {
@@ -114,6 +129,11 @@
 }
 .form-array-string-item button {
   width: 40px;
+}
+
+.form-row {
+  display: flex;
+  column-gap: 20px;
 }
 
 .download-item {

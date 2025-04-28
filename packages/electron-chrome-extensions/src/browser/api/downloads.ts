@@ -162,6 +162,58 @@ export class DownloadsAPI {
     })
   }
 
+  private isSet(value: any): boolean {
+    return typeof value !== 'undefined'
+  }
+
+  private filterDownloads(
+    downloadItem: chrome.downloads.DownloadItem,
+    downloadQuery: chrome.downloads.DownloadQuery,
+  ) {
+    const d = downloadItem
+    const q = downloadQuery
+    if (!d) return false
+    if (!Object.keys(q).length) return true // no query criteria
+    if (this.isSet(q.id) && q.id !== d.id) return false
+    if (this.isSet(q.bytesReceived) && q.bytesReceived !== d.bytesReceived) return false
+    if (this.isSet(q.danger) && q.danger !== d.danger) return false
+    if (this.isSet(q.endTime) && q.endTime !== d.endTime) return false
+    if (this.isSet(q.endedAfter) && (!d.endTime || new Date(q.endedAfter!) >= new Date(d.endTime)))
+      return false
+    if (
+      this.isSet(q.endedBefore) &&
+      (!d.endTime || new Date(q.endedBefore!) <= new Date(d.endTime))
+    )
+      return false
+    if (this.isSet(q.error) && q.error !== d.error) return false
+    if (this.isSet(q.exists) && q.exists !== d.exists) return false
+    if (this.isSet(q.fileSize) && q.fileSize !== d.fileSize) return false
+    if (this.isSet(q.filename) && q.filename !== d.filename) return false
+    if (this.isSet(q.filenameRegex) && !new RegExp(q.filenameRegex!).test(d.filename)) return false
+    // finalUrl doesn't exist?
+    if (this.isSet(q.mime) && q.mime !== d.mime) return false
+    if (this.isSet(q.paused) && q.paused !== d.paused) return false
+    if (this.isSet(q.startTime) && q.startTime !== d.startTime) return false
+    if (
+      this.isSet(q.startedAfter) &&
+      (!d.startTime || new Date(q.startedAfter!) >= new Date(d.startTime))
+    )
+      return false
+    if (
+      this.isSet(q.startedBefore) &&
+      (!d.startTime || new Date(q.startedBefore!) <= new Date(d.startTime))
+    )
+      return false
+    if (this.isSet(q.state) && q.state !== d.state) return false
+    if (this.isSet(q.totalBytes) && q.totalBytes !== d.totalBytes) return false
+    if (this.isSet(q.totalBytesGreater) && q.totalBytesGreater! >= d.totalBytes) return false
+    if (this.isSet(q.totalBytesLess) && q.totalBytesLess! <= d.totalBytes) return false
+    if (this.isSet(q.url) && q.url !== d.url) return false
+    if (this.isSet(q.urlRegex) && !new RegExp(q.urlRegex!).test(d.url)) return false
+    // TODO: query.query
+    return true
+  }
+
   private convertDownloadState(
     state: 'progressing' | 'completed' | 'cancelled' | 'interrupted',
   ): chrome.downloads.DownloadState {
@@ -205,12 +257,14 @@ export class DownloadsAPI {
     event.sender.session.downloadURL(options.url, opts)
   }
 
-  private erase(event: ExtensionEvent, downloadId: number) {
-    const { idx, dl } = this.getDownload(downloadId)
-    if (!dl) return
-    if (dl.sessDownload.getState() == 'progressing') dl.sessDownload.cancel()
-    this.downloads.splice(idx, 1)
-    this.ctx.router.broadcastEvent('downloads.onErased', dl.download.id)
+  private erase(event: ExtensionEvent, query: chrome.downloads.DownloadQuery) {
+    const downloads = this.downloads.filter((d) => this.filterDownloads(d.download, query))
+    for (const dl of downloads) {
+      if (dl.sessDownload.getState() == 'progressing') dl.sessDownload.cancel()
+      const idx = this.downloads.findIndex((d) => d.download.id === dl.download.id)
+      this.downloads.splice(idx, 1)
+      this.ctx.router.broadcastEvent('downloads.onErased', dl.download.id)
+    }
   }
 
   private async open(event: ExtensionEvent, downloadId: number) {
@@ -241,57 +295,10 @@ export class DownloadsAPI {
     event: ExtensionEvent,
     query: chrome.downloads.DownloadQuery,
   ): chrome.downloads.DownloadItem[] {
-    const isSet = (value: any) => typeof value !== 'undefined'
-
     return this.downloads
       .map((d) => d.download)
-      .filter((d) => {
-        if (!d) return false
-        if (!Object.keys(query).length) return true // no query criteria
-        if (isSet(query.id) && query.id !== d.id) return false
-        if (isSet(query.bytesReceived) && query.bytesReceived !== d.bytesReceived) return false
-        if (isSet(query.danger) && query.danger !== d.danger) return false
-        if (isSet(query.endTime) && query.endTime !== d.endTime) return false
-        if (
-          isSet(query.endedAfter) &&
-          (!d.endTime || new Date(query.endedAfter!) >= new Date(d.endTime))
-        )
-          return false
-        if (
-          isSet(query.endedBefore) &&
-          (!d.endTime || new Date(query.endedBefore!) <= new Date(d.endTime))
-        )
-          return false
-        if (isSet(query.error) && query.error !== d.error) return false
-        if (isSet(query.exists) && query.exists !== d.exists) return false
-        if (isSet(query.fileSize) && query.fileSize !== d.fileSize) return false
-        if (isSet(query.filename) && query.filename !== d.filename) return false
-        if (isSet(query.filenameRegex) && !new RegExp(query.filenameRegex!).test(d.filename))
-          return false
-        // finalUrl doesn't exist?
-        if (isSet(query.mime) && query.mime !== d.mime) return false
-        if (isSet(query.paused) && query.paused !== d.paused) return false
-        if (isSet(query.startTime) && query.startTime !== d.startTime) return false
-        if (
-          isSet(query.startedAfter) &&
-          (!d.startTime || new Date(query.startedAfter!) >= new Date(d.startTime))
-        )
-          return false
-        if (
-          isSet(query.startedBefore) &&
-          (!d.startTime || new Date(query.startedBefore!) <= new Date(d.startTime))
-        )
-          return false
-        if (isSet(query.state) && query.state !== d.state) return false
-        if (isSet(query.totalBytes) && query.totalBytes !== d.totalBytes) return false
-        if (isSet(query.totalBytesGreater) && query.totalBytesGreater! >= d.totalBytes) return false
-        if (isSet(query.totalBytesLess) && query.totalBytesLess! <= d.totalBytes) return false
-        if (isSet(query.url) && query.url !== d.url) return false
-        if (isSet(query.urlRegex) && !new RegExp(query.urlRegex!).test(d.url)) return false
-        // TODO: query.query
-        return true
-      })
-      .slice(0, isSet(query.limit) && query.limit! > 0 ? query.limit : undefined)
+      .filter((d) => this.filterDownloads(d, query))
+      .slice(0, this.isSet(query.limit) && query.limit! > 0 ? query.limit : undefined)
     // TODO: query.orderBy
   }
 

@@ -4,6 +4,7 @@
   --control-hover-light-bg-color: #ffffff01;
   --control-hover-dark-bg-color: #ffffff01;
   --control-hover-layered-bg-color: #ffffff2f;
+  --control-hover-active-bg-color: #ffffff3f;
   --control-hover-light-bg-filter: saturate(110%) brightness(110%);
   --control-hover-dark-bg-filter: saturate(110%) brightness(120%);
   --control-text-color: #ecececc0;
@@ -79,6 +80,38 @@
   user-select: none;
 }
 
+*::-webkit-scrollbar {
+  height: 12px;
+  width: 12px;
+}
+*::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background-color: var(--control-hover-layered-bg-color);
+  background-clip: content-box;
+  border: solid 3px transparent;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--control-hover-active-bg-color);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--control-hover-layered-bg-color);
+}
+
+#settings-menu::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+#settings-menu::-webkit-scrollbar-thumb {
+  border: unset;
+  border-radius: 3px;
+}
+
 html,
 body,
 #root {
@@ -134,11 +167,6 @@ ul {
 
 #topbar.tabui-hidden .toolbar {
   display: none;
-}
-
-#settings {
-  height: 100%;
-  flex: 1 1 auto;
 }
 
 /*----- TABS -----*/
@@ -429,6 +457,7 @@ ul {
 }
 
 #actions {
+  align-items: center;
   margin-left: 8px;
   column-gap: 2px;
 }

@@ -20,6 +20,10 @@ const configSchema = {
           '{{kc3-extension}}/*',
         ],
       },
+      alwaysShowExtensions: { type: 'bool', default: true },
+      alwaysShowReload: { type: 'bool', default: true },
+      alwaysShowBack: { type: 'bool', default: false },
+      alwaysShowForward: { type: 'bool', default: false },
     },
   },
   kc3kai: {

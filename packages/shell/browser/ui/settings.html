@@ -25,7 +25,6 @@
 </head>
 
 <body>
-  <!-- ko if: config -->
   <div id="root" data-bind="attr: { class: `theme-${theme()} brightness-${brightness()}` }">
     <!-- ko if: settingsInitialized -->
     <div id="settings">
@@ -48,6 +47,9 @@
             <span class="header" data-bind="text: name"></span>
           </div>
           <!-- /ko -->
+        </div>
+        <div id="version">
+          <span data-bind="text: version"></span>
         </div>
       </div>
       <div id="settings-container">
@@ -107,11 +109,32 @@
               <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)"><i class="fa-sharp fa-solid fa-xmark"></i></button>
             </div>
             <!-- /ko -->
-            <div class="form-array-string-item add-new">
-              <label for="new-hide-adressbar-site-input">Add:</label>
-              <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
-              <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
-            </div>
+          </div>
+          <div class="form-array-string-item add-new">
+            <label for="new-hide-adressbar-site-input">Add:</label>
+            <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
+            <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Show in tab bar when hidden:</label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="always-show-extensions" data-bind="checked: config.window.view.alwaysShowExtensions"></input>
+            <label for="always-show-extensions" title="extensions"><i class="fa-solid fa-puzzle-piece"></i></label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="always-show-goback" data-bind="checked: config.window.view.alwaysShowBack"></input>
+            <label for="always-show-goback" title="go back"><i class="fa-solid fa-arrow-left"></i></label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="always-show-goforward" data-bind="checked: config.window.view.alwaysShowForward"></input>
+            <label for="always-show-goforward" title="go forward"><i class="fa-solid fa-arrow-right"></i></label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="always-show-reload" data-bind="checked: config.window.view.alwaysShowReload"></input>
+            <label for="always-show-reload" title="refresh"><i class="fa-solid fa-rotate-right"></i></label>
           </div>
         </div>
       </div>
@@ -194,7 +217,10 @@
       </div>
     </script>
     <script type="text/html" id="settings-content-3">
-      <h3>Downloads <button type="button" class="btn btn-secondary btn-sm" data-bind="click: () => chrome.downloads.showDefaultFolder()" title="open downloads folder"><i class="fa-solid fa-folder"></i></button></h3>
+      <h3>Downloads
+        <button type="button" class="btn btn-secondary btn-sm" data-bind="click: () => chrome.downloads.showDefaultFolder()" title="open downloads folder"><i class="fa-solid fa-folder"></i></button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bind="click: () => clearFinishedDownloads()" title="clear finished downloads"><i class="fa-regular fa-trash-can"></i></button>
+      </h3>
       <div class="settings-group form-items-scroller">
         <!-- ko foreach: downloads -->
         <div class="download-item" data-bind="click: open">
@@ -226,7 +252,7 @@
               <!-- /ko -->
               <!-- ko if: state() === 'complete' -->
               <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: openFolder, clickBubble: false" title="show in folder"><i class="fa-solid fa-folder-open"></i></button>
-              <button type="button" class="btn btn-outline-danger btn-sm" data-bind="click: deleteFile, clickBubble: false" title="delete file"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-bind="click: deleteFile, clickBubble: false" title="delete file"><i class="fa-regular fa-trash-can"></i></button>
               <!-- /ko -->
               <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: erase, clickBubble: false" title="remove entry"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -255,7 +281,6 @@
       </div>
     </script>
   </div>
-  <!-- /ko -->
 </body>
 
 </html>

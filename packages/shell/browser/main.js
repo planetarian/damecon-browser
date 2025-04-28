@@ -547,6 +547,9 @@ class Browser {
 
       let result
       switch (type) {
+        case 'get-damecon-version':
+          result = `${app.getName()} v${app.getVersion()}`
+          break
         case 'get-config-item':
           result = configStore.get(data.key)
           break
