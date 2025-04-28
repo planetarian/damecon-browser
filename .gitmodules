@@ -1,0 +1,3 @@
+[submodule "packages/kccacheproxy"]
+	path = packages/kccacheproxy
+	url = https://github.com/tibowl/KCCacheProxy
