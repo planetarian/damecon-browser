@@ -49,6 +49,8 @@ class KC3Updater {
   }
 
   async update(extensionsPath, channel) {
+    fs.mkdirSync(extensionsPath)
+
     const dir = path.join(extensionsPath, 'kc3kai-' + channel)
 
     console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`)
