@@ -707,8 +707,8 @@ class Browser {
     })
     this.windows.push(win)
     if (this.windows.length == 1) {
-      initKccp()
       kccp.ipc.setMainWindow(win.window)
+      initKccp()
     }
 
     if (process.env.SHELL_DEBUG) {
