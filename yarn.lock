@@ -930,13 +930,6 @@
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.3.tgz#555193ab2e3bb3b6adc3d551c9c030d9e860daf6"
   integrity sha512-k2Ty1JcVojjJFwrg/ThKi2ujJ7XNLYaFGNB/bWT9wGR+oSMJHMa5w+CUq6p/pVrKeNNgA7pCqEcjSnHVoqJQFw==
 
-"@heroku/socksv5@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@heroku/socksv5/-/socksv5-0.0.9.tgz#7a3905921136b2666979a0f86bb4f062f657f793"
-  integrity sha512-bV8v7R/c0gNve8i7yPmZbcCTJUqRbCnMSvcegcMaz+ly+FoZf9i4+3MTjKsX+OZn9w0w1I6VJYQBcdM+yMWPQQ==
-  dependencies:
-    ip-address "^5.8.8"
-
 "@humanwhocodes/config-array@^0.5.0":
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.5.0.tgz#1407967d4c6eecd7388f83acf1eaf4d0c6e58ef9"
@@ -4547,15 +4540,6 @@ interpret@^3.1.1:
   resolved "https://registry.yarnpkg.com/interpret/-/interpret-3.1.1.tgz#5be0ceed67ca79c6c4bc5cf0d7ee843dcea110c4"
   integrity sha512-6xwYfHbajpoF0xLW+iwLkhwgvLoZDfjYfoFNu8ftMoXINzwuymNLd9u/KmwtdT2GbR+/Cz66otEGEVVUHX9QLQ==
 
-ip-address@^5.8.8:
-  version "5.9.4"
-  resolved "https://registry.yarnpkg.com/ip-address/-/ip-address-5.9.4.tgz#4660ac261ad61bd397a860a007f7e98e4eaee386"
-  integrity sha512-dHkI3/YNJq4b/qQaz+c8LuarD3pY24JqZWfjB8aZx1gtpc2MDILu9L9jpZe1sHpzo/yWFweQVn+U//FhazUxmw==
-  dependencies:
-    jsbn "1.1.0"
-    lodash "^4.17.15"
-    sprintf-js "1.1.2"
-
 ip@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ip/-/ip-2.0.0.tgz#4cf4ab182fee2314c75ede1276f8c80b479936da"
@@ -4809,11 +4793,6 @@ js-yaml@^3.13.1:
   dependencies:
     argparse "^1.0.7"
     esprima "^4.0.0"
-
-jsbn@1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/jsbn/-/jsbn-1.1.0.tgz#b01307cb29b618a1ed26ec79e911f803c4da0040"
-  integrity sha512-4bYVV3aAMtDTTu4+xsDYa6sy9GyJ69/amsu9sYF2zqjiEoZA5xJi3BrfX3uY+/IekIu7MwdObdbDWpoZdBv3/A==
 
 json-buffer@3.0.0:
   version "3.0.0"
@@ -5604,6 +5583,11 @@ node-releases@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/node-releases/-/node-releases-2.0.6.tgz#8a7088c63a55e493845683ebf3c828d8c51c5503"
   integrity sha512-PiVXnNuFm5+iYkLBNeq5211hvO38y63T0i2KKh2KnUs3RpzJ+JtODFjkD8yjLwnDkTYF1eKXheUwdssR+NRZdg==
+
+node-socksv5-dns-looukp@^1.0.9:
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/node-socksv5-dns-looukp/-/node-socksv5-dns-looukp-1.0.9.tgz#57cc165e38483a4936dae6f3d34ffc1df351a0a3"
+  integrity sha512-IDnQ45vMsBM0EDslzw1HPPHQNQrvLguI6fo1tac3ILCgyMCJGMmT7GzdsRCQQ9u2P1PUP7TAMA/xELPSfPXcWw==
 
 node-stream-zip@^1.15.0:
   version "1.15.0"
@@ -6983,7 +6967,7 @@ spdy@^4.0.2:
     select-hose "^2.0.0"
     spdy-transport "^3.0.0"
 
-sprintf-js@1.1.2, sprintf-js@^1.1.2:
+sprintf-js@^1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.1.2.tgz#da1765262bf8c0f571749f2ad6c26300207ae673"
   integrity sha512-VE0SOVEHCk7Qc8ulkWw3ntAzXuqf7S2lvwQaDLRnUeIEaKNQJzV6BwmLKhOqT61aGhfUMrXeaBk+oDGCzvhcug==

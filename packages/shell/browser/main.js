@@ -33,8 +33,8 @@ import './workers/worker-shim'
 import kc3UpdateWorker from 'worker-loader!./workers/kc3update-worker.js'
 
 // KCCP
-import ipcKccp from '../../kccacheproxy/src/proxy/ipc.js'
-import kccpConfig from '../../kccacheproxy/src/proxy/config.js'
+const kccp = require('../../kccacheproxy/src/proxy/proxy.js')
+let kccpProxy
 
 const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
 const cfg = configStore.all
@@ -98,8 +98,11 @@ const manifestExists = async (dirPath) => {
 }
 
 const initKccp = function () {
-  ipcKccp.registerElectron(ipcMain, app)
-  kccpConfig.loadConfig(app)
+  kccp.ipc.registerElectron(ipcMain, app)
+  kccp.config.loadConfig(app)
+  kccpProxy = new kccp.Proxy()
+  kccpProxy.init()
+  kccpProxy.start()
 }
 
 const getParentWindowOfTab = (tab) => {
@@ -703,6 +706,10 @@ class Browser {
       }
     })
     this.windows.push(win)
+    if (this.windows.length == 1) {
+      initKccp()
+      kccp.ipc.setMainWindow(win.window)
+    }
 
     if (process.env.SHELL_DEBUG) {
       win.webContents.openDevTools({ mode: 'detach' })
