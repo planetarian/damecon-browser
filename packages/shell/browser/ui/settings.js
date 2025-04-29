@@ -68,23 +68,31 @@ class Settings {
     this.selectedConfigPage(item.id)
   }
 
-  // loads values from the current config into ko properties
-  async prepConfigProperties() {
-    let config
-    let tries = 0
+  async tryInvoke(asyncCallback, name) {
+    let result
+    let tries = 5
     let error
-    while (!config && tries++ < 3) {
+    while (!result && tries-- > 0) {
       try {
-        console.log('>> fetching config...')
-        config = await configStore.all()
-        console.log('  >> got config', config)
+        console.log(`>> invoking ${name ?? 'action'}...`)
+        result = await asyncCallback()
+        console.log(`>> received ${result}...`)
+        return result
       } catch (err) {
         error = err
-        console.log('  >> got error', err)
-        // TODO: actually fix this
-        console.error('!! ERROR !! settings fetch bug encountered. trying again..')
+
+        console.error(
+          ` >> got error while invoking ${name ?? 'action'}. ${tries > 0 ? 'retrying...' : 'giving up.'}`,
+          err,
+        )
       }
     }
+    throw error
+  }
+
+  // loads values from the current config into ko properties
+  async prepConfigProperties() {
+    const config = await configStore.all()
     if (!config) throw error ?? 'Unknown error occurred fetching config.'
     configApplySync(config, this.prepConfigProperty.bind(this))
 
@@ -325,7 +333,10 @@ class Settings {
     this.init()
   }
   async init() {
-    this.version = await sendMessage('get-damecon-version')
+    this.version = await this.tryInvoke(
+      async () => await sendMessage('get-damecon-version'),
+      'get-damecon-version',
+    )
 
     this.config = await this.prepConfigProperties()
     console.log('done prepping config', this.config)
