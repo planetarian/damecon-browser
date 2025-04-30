@@ -49,9 +49,11 @@ class KC3Updater {
   }
 
   async update(extensionsPath, channel) {
-    try {
-      fs.mkdirSync(extensionsPath)
-    } catch (err) {}
+    if (!fs.existsSync(extensionsPath)) {
+      try {
+        fs.mkdirSync(extensionsPath)
+      } catch (err) {}
+    }
 
     const dir = path.join(extensionsPath, 'kc3kai-' + channel)
 
@@ -92,10 +94,14 @@ class KC3Updater {
         } else {
           const zipProcess = self.newProcess('Downloading release ' + latestVersion)
           try {
+            if (fs.existsSync(dir)) {
+              try {
+                fs.rmdirSync(dir, { recursive: true, force: true })
+              } catch (err) {}
+            }
             try {
-              fs.rmdirSync(dir, { recursive: true, force: true })
+              fs.mkdirSync(dir)
             } catch (err) {}
-            fs.mkdirSync(dir)
             const zipRes = await fetch(releaseAsset.browser_download_url)
             const zipFilename = 'kc3kai-release-' + latestVersion + '.zip'
             const zipFilePath = path.join(dir, zipFilename)
@@ -105,7 +111,9 @@ class KC3Updater {
             var zip = new AdmZip(zipFilePath)
             zip.extractAllTo(dir, true)
 
-            fs.rmSync(zipFilePath)
+            try {
+              fs.rmSync(zipFilePath)
+            } catch (err) {}
             fs.writeFileSync(releaseFile, latestVersion)
           } finally {
             zipProcess.complete()
