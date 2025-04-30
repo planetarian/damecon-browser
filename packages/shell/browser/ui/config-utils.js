@@ -51,11 +51,15 @@ const configSchema = {
     custom2Location: { type: 'string' },
   },
   proxy: {
-    mode: { type: 'option', options: ['client', 'internal'], default: 'client' },
+    enable: { type: 'bool', default: false },
+    mode: {
+      type: 'option',
+      options: ['kccp-external', 'kccp-internal', 'all-external'],
+      default: 'kccp-external',
+    },
     client: {
       host: { type: 'string', default: '127.0.0.1' },
       port: { type: 'number', default: 8081 },
-      enable: { type: 'bool', default: false },
     },
   },
 }

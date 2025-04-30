@@ -87,6 +87,7 @@
     <!-- /ko -->
   </div>
   <div id="settings-content-templates">
+
     <script type="text/html" id="settings-content-0">
       <h3>Damecon Settings</h3>
       <div class="settings-group">
@@ -139,6 +140,7 @@
         </div>
       </div>
     </script>
+
     <script type="text/html" id="settings-content-1">
       <h3>KC3Kai Settings</h3>
       <div class="settings-group">
@@ -199,8 +201,20 @@
         <!-- /ko -->
       </div>
     </script>
+
     <script type="text/html" id="settings-content-2">
       <h3>Proxy Settings</h3>
+      <div class="settings-group">
+        <div class="form-check">
+          <input class="form-check-input" id="proxyenable" type="checkbox" data-bind="checked: config.proxy.enable"></input>
+          <label class="form-check-label" for="proxyenable">Enabled</label>
+        </div>
+        <div class="form-group">
+          <label for="proxymode">Mode</label>
+          <select id="proxymode" class="form-control" data-bind="options: configSchema.proxy.mode.options, value: config.proxy.mode"></select>
+        </div>
+      </div>
+      <!-- ko if: config.proxy.mode().endsWith('-external') -->
       <div class="settings-group">
         <div class="form-group">
           <label for="proxyclienthost">Host</label>
@@ -210,12 +224,10 @@
           <label for="proxyclientport">Port</label>
           <input id="proxyclientport" type="number" class="form-control" data-bind="value: config.proxy.client.port" placeholder="Enter port (e.g. 8081)">
         </div>
-        <div class="form-check">
-          <input class="form-check-input" id="proxyclientenable" type="checkbox" data-bind="checked: config.proxy.client.enable"></input>
-          <label class="form-check-label" for="proxyclientenable">Enabled</label>
-        </div>
       </div>
+      <!-- /ko -->
     </script>
+
     <script type="text/html" id="settings-content-3">
       <h3>Downloads
         <button type="button" class="btn btn-secondary btn-sm" data-bind="click: () => chrome.downloads.showDefaultFolder()" title="open downloads folder"><i class="fa-solid fa-folder"></i></button>
@@ -280,6 +292,7 @@
         <!-- /ko -->
       </div>
     </script>
+
   </div>
 </body>
 

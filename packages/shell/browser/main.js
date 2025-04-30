@@ -39,7 +39,13 @@ let kccpProxy
 const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
 const cfg = configStore.all
 populateConfigDefaults(cfg)
+
+// config fixes
 if (cfg.proxy.client.enable === 'false') cfg.proxy.client.enable = false // i'm stupid
+if (typeof cfg.proxy.client.enable !== 'undefined') {
+  cfg.proxy.enable = cfg.proxy.client.enable
+  delete cfg.proxy.client.enable
+}
 configStore.all = cfg // save with updated defaults
 
 app.commandLine.appendSwitch('force-gpu-mem-available-mb', '10000')
@@ -99,7 +105,11 @@ const manifestExists = async (dirPath) => {
 
 const initKccp = function () {
   kccp.ipc.registerElectron(ipcMain, app)
+}
+
+const startKccp = function () {
   kccp.config.loadConfig(app)
+  kccpProxy?.close()
   kccpProxy = new kccp.Proxy()
   kccpProxy.init()
   kccpProxy.start()
@@ -200,7 +210,11 @@ class TabbedBrowserWindow {
     return this.tabs.selected
   }
 
-  generatePac(host, port) {
+  generatePac(host, port, mode) {
+    if (mode.startsWith('all-')) {
+      return `function FindProxyForURL(url, host) {\n return "PROXY ${host}:${port}";\n }\n`
+    }
+
     const ips = [
       '*.kancolle-server.com',
       '203.104.209.71',
@@ -239,11 +253,18 @@ class TabbedBrowserWindow {
   }
 
   async applyProxy() {
-    const enable = configStore.get('proxy.client.enable')
+    const enable = configStore.get('proxy.enable')
     if (enable) {
-      const host = configStore.get('proxy.client.host')
-      const port = configStore.get('proxy.client.port')
-      const data = this.generatePac(host, port)
+      const mode = configStore.get('proxy.mode')
+      let host, port
+      if (mode.endsWith('-external')) {
+        host = configStore.get('proxy.client.host')
+        port = configStore.get('proxy.client.port')
+      } else {
+        host = '127.0.0.1'
+        port = 8081
+      }
+      const data = this.generatePac(host, port, mode)
       const pacData =
         'data:application/x-ns-proxy-autoconfig;base64,' +
         Buffer.from(data, 'utf8').toString('base64')
@@ -534,7 +555,8 @@ class Browser {
           break
         case 'set-config-item':
           result = configStore.set(data.key, data.value)
-          if (data.key.startsWith('proxy.client.')) await win.applyProxy()
+          if (data.key.startsWith('proxy.client.') || data.key == 'proxy.mode')
+            await win.applyProxy()
           else if (data.key == 'kc3kai.update.channel') {
             if (kc3ExtensionId) this.session.removeExtension(kc3ExtensionId)
             await this.updateKc3IfScheduled(win)
