@@ -132,6 +132,23 @@
 }
 
 .form-row {
+  align-items: center;
+  margin-bottom: 2px;
+}
+.form-row label {
+  margin: 0;
+}
+.form-check {
+  padding-top: 8px;
+  height: calc(2.25rem + 2px);
+}
+/* not really supposed to use tehse combined like this but w/e */
+.form-control.col {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.form-row-gap {
   display: flex;
   column-gap: 20px;
 }

@@ -103,16 +103,41 @@ const manifestExists = async (dirPath) => {
   }
 }
 
+const setKccpConfig = function (kccpConfig) {
+  kccp.config.setConfig(kccpConfig, true)
+  const windows = BrowserWindow.getAllWindows()
+  if (windows.length == 0) {
+    console.log('No windows to report to.')
+    return
+  }
+  windows[0].webContents.send('kccp-config-saved')
+}
+
 const initKccp = function () {
   kccp.ipc.registerElectron(ipcMain, app)
 }
 
 const startKccp = function () {
+  console.log(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy`)
   kccp.config.loadConfig(app)
   kccpProxy?.close()
   kccpProxy = new kccp.Proxy()
   kccpProxy.init()
   kccpProxy.start()
+}
+
+const stopKccp = function () {
+  if (kccpProxy) {
+    console.log('>> shutting down KCCacheProxy')
+    kccpProxy?.close()
+    kccpProxy = undefined
+  }
+}
+
+function getKccpModPath(kccpConfig) {
+  return kccpConfig.mods.length > 0
+    ? join(kccpConfig.mods[kccpConfig.mods.length - 1].path, '..')
+    : undefined
 }
 
 const getParentWindowOfTab = (tab) => {
@@ -260,9 +285,12 @@ class TabbedBrowserWindow {
       if (mode.endsWith('-external')) {
         host = configStore.get('proxy.client.host')
         port = configStore.get('proxy.client.port')
+        stopKccp()
       } else {
-        host = '127.0.0.1'
-        port = 8081
+        const kccpConfig = kccp.config.getConfig()
+        host = kccpConfig.hostname
+        port = kccpConfig.port
+        startKccp()
       }
       const data = this.generatePac(host, port, mode)
       const pacData =
@@ -271,6 +299,7 @@ class TabbedBrowserWindow {
       const proxyConfig = { mode: 'pac_script', pacScript: pacData }
       await this.window.webContents.session.setProxy(proxyConfig)
     } else {
+      stopKccp()
       await this.window.webContents.session.setProxy({ mode: 'system' })
     }
   }
@@ -555,9 +584,9 @@ class Browser {
           break
         case 'set-config-item':
           result = configStore.set(data.key, data.value)
-          if (data.key.startsWith('proxy.client.') || data.key == 'proxy.mode')
+          if (data.key.startsWith('proxy.')) {
             await win.applyProxy()
-          else if (data.key == 'kc3kai.update.channel') {
+          } else if (data.key == 'kc3kai.update.channel') {
             if (kc3ExtensionId) this.session.removeExtension(kc3ExtensionId)
             await this.updateKc3IfScheduled(win)
           } else if (data.key === 'window.style.brightness') {
@@ -602,6 +631,38 @@ class Browser {
           //console.log('clicked tab X', data)
           this.confirmCloseTab(data.tabId)
           break
+        case 'kccp-get-config':
+          result = kccp.config.getConfig()
+          break
+        case 'kccp-save-config':
+          kccp.config.setConfig(data, true)
+          win.applyProxy()
+          break
+        case 'kccp-add-mod':
+          const kccpConfig = kccp.config.getConfig()
+          const response = await dialog.showOpenDialog({
+            title: 'Select a mod metadata file',
+            filters: [
+              {
+                name: 'Mod metadata',
+                defaultPath: getKccpModPath(kccpConfig),
+                extensions: ['mod.json'],
+              },
+            ],
+            properties: ['openFile'],
+          })
+          if (response.canceled) return
+          if (kccpConfig.mods.map((m) => m.path).includes(response.filePaths[0])) {
+            console.error('error', new Date(), 'Mod already added')
+            return
+          }
+          kccpConfig.mods.push({ path: response.filePaths[0] })
+          setKccpConfig(kccpConfig)
+
+          break
+        case 'kccp-reload-mods':
+          await kccp.ipc.reloadModCache()
+          break
       }
       return result
     })
@@ -614,8 +675,6 @@ class Browser {
     // set up kc3 update worker thread
     console.log('>> main: starting kc3 update service')
 
-    //const workerUrl = new URL('./workers/kc3update-worker.js', import.meta.url)
-    //this.kc3UpdateWorker = new Worker(path.join(PATHS.WORKERS,'kc3update-worker.js'))
     this.kc3UpdateWorker = new kc3UpdateWorker()
     this.kc3UpdateWorker.on('message', async (msg) => {
       //console.log('main.js received message from KC3 update worker', msg)

@@ -91,13 +91,13 @@
     <script type="text/html" id="settings-content-0">
       <h3>Damecon Settings</h3>
       <div class="settings-group">
-        <div class="form-group">
-          <label for="windowstyletheme">Theme</label>
-          <select id="windowstyletheme" class="form-control" data-bind="options: configSchema.window.style.theme.options, value: config.window.style.theme"></select>
+        <div class="form-row">
+          <label for="windowstyletheme" class="col-sm-3">Theme</label>
+          <select id="windowstyletheme" class="col form-control" data-bind="options: configSchema.window.style.theme.options, value: config.window.style.theme"></select>
         </div>
-        <div class="form-group">
-          <label for="windowstylebright">Brightness</label>
-          <select id="windowstylebright" class="form-control" data-bind="options: configSchema.window.style.brightness.options, value: config.window.style.brightness"></select>
+        <div class="form-row">
+          <label for="windowstylebright" class="col-sm-3">Brightness</label>
+          <select id="windowstylebright" class="col form-control" data-bind="options: configSchema.window.style.brightness.options, value: config.window.style.brightness"></select>
         </div>
       </div>
       <div class="settings-group">
@@ -105,19 +105,25 @@
           <label>Hide address bar for sites (Alt+A to override)</label>
           <div class="form-items-scroller">
             <!-- ko foreach: config.window.view.hideAddressBarSites -->
-            <div class="form-array-string-item">
+            <div class="form-array-string-item input-group">
               <input type="text" class="form-control" data-bind="value: $rawData, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
-              <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)"><i class="fa-sharp fa-solid fa-xmark"></i></button>
+              <div class="input-group-append">
+                <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)"><i class="fa-sharp fa-solid fa-xmark"></i></button>
+              </div>
             </div>
             <!-- /ko -->
           </div>
           <div class="form-array-string-item add-new">
             <label for="new-hide-adressbar-site-input">Add:</label>
-            <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
-            <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
+            <div class="input-group">
+              <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
+              <div class="input-group-append">
+                <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="form-row">
+        <div class="form-row-gap">
           <div class="form-group">
             <label>Show in tab bar when hidden:</label>
           </div>
@@ -144,9 +150,9 @@
     <script type="text/html" id="settings-content-1">
       <h3>KC3Kai Settings</h3>
       <div class="settings-group">
-        <div class="form-group">
-          <label for="kc3gamepage">Game startup page</label>
-          <select id="kc3gamepage" class="form-control" data-bind="options: configSchema.kc3kai.startup.gamePage.options, value: config.kc3kai.startup.gamePage"></select>
+        <div class="form-row">
+          <label for="kc3gamepage" class="col-sm-4">Game startup page</label>
+          <select id="kc3gamepage" class="col form-control" data-bind="options: configSchema.kc3kai.startup.gamePage.options, value: config.kc3kai.startup.gamePage"></select>
         </div>
         <div class="form-check">
           <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: config.kc3kai.startup.openDevtools"></input>
@@ -158,14 +164,14 @@
         </div>
       </div>
       <div class="settings-group">
-        <div class="form-group">
-          <label for="kc3updatechannel">Update channel</label>
-          <select id="kc3updatechannel" class="form-control" data-bind="options: configSchema.kc3kai.update.channel.options, value: config.kc3kai.update.channel, enable: canSetKc3Channel"></select>
+        <div class="form-row">
+          <label for="kc3updatechannel" class="col-sm-4">Update channel</label>
+          <select id="kc3updatechannel" class="col form-control" data-bind="options: configSchema.kc3kai.update.channel.options, value: config.kc3kai.update.channel, enable: canSetKc3Channel"></select>
         </div>
         <!-- ko if: !config.kc3kai.update.channel()?.startsWith('custom') -->
-        <div class="form-group">
-          <label for="kc3updateschedule">Update schedule</label>
-          <select id="kc3updateschedule" class="form-control" data-bind="options: configSchema.kc3kai.update.schedule.options, value: config.kc3kai.update.schedule"></select>
+        <div class="form-row">
+          <label for="kc3updateschedule" class="col-sm-4">Update schedule</label>
+          <select id="kc3updateschedule" class="col form-control" data-bind="options: configSchema.kc3kai.update.schedule.options, value: config.kc3kai.update.schedule"></select>
         </div>
         <div class="form-check">
           <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: config.kc3kai.update.auto"></input>
@@ -173,20 +179,24 @@
         </div>
         <!-- /ko -->
         <!-- ko if: config.kc3kai.update.channel() === 'custom1' -->
-        <div class="form-group">
-          <label for="kc3custom1location">Location</label>
-          <div class="input-group">
+        <div class="form-row">
+          <label for="kc3custom1location" class="col-sm-4">Location</label>
+          <div class="input-group col">
             <input type="text" id="kc3custom1location" class="form-control" data-bind="value: config.kc3kai.custom1Location"/>
-            <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+            </div>
           </div>
         </div>
         <!-- /ko -->
         <!-- ko if: config.kc3kai.update.channel() === 'custom2' -->
-        <div class="form-group">
-          <label for="kc3custom2location">Location</label>
-          <div class="input-group">
+        <div class="form-row">
+          <label for="kc3custom2location" class="col-sm-4">Location</label>
+          <div class="input-group col">
             <input type="text" id="kc3custom2location" class="form-control" data-bind="value: config.kc3kai.custom2Location"/>
-            <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+            </div>
           </div>
         </div>
         <!-- /ko -->
@@ -209,22 +219,82 @@
           <input class="form-check-input" id="proxyenable" type="checkbox" data-bind="checked: config.proxy.enable"></input>
           <label class="form-check-label" for="proxyenable">Enabled</label>
         </div>
-        <div class="form-group">
-          <label for="proxymode">Mode</label>
-          <select id="proxymode" class="form-control" data-bind="options: configSchema.proxy.mode.options, value: config.proxy.mode"></select>
+        <div class="form-row">
+          <label for="proxymode" class="col-sm-3">Mode</label>
+          <select id="proxymode" class="col form-control" data-bind="options: configSchema.proxy.mode.options, value: config.proxy.mode"></select>
         </div>
       </div>
       <!-- ko if: config.proxy.mode().endsWith('-external') -->
+      <h5>External Proxy</h5>
       <div class="settings-group">
-        <div class="form-group">
-          <label for="proxyclienthost">Host</label>
-          <input id="proxyclienthost" type="text" class="form-control" data-bind="value: config.proxy.client.host" placeholder="Enter IP/host (e.g. 127.0.0.1)">
+        <div class="form-row">
+          <label for="proxyclienthost" class="col-sm-3">Host</label>
+          <input id="proxyclienthost" type="text" class="col form-control" data-bind="value: config.proxy.client.host" placeholder="Enter IP/host (e.g. 127.0.0.1)">
         </div>
-        <div class="form-group">
-          <label for="proxyclientport">Port</label>
-          <input id="proxyclientport" type="number" class="form-control" data-bind="value: config.proxy.client.port" placeholder="Enter port (e.g. 8081)">
+        <div class="form-row">
+          <label for="proxyclientport" class="col-sm-3">Port</label>
+          <input id="proxyclientport" type="number" class="col form-control" data-bind="value: config.proxy.client.port" placeholder="Enter port (e.g. 8081)">
         </div>
       </div>
+      <!-- /ko -->
+      <!-- ko if: config.proxy.mode() === 'kccp-internal' -->
+      <h5>Built-in KCCacheProxy</h5>
+      <div class="settings-group">
+        <div class="form-row">
+          <div class="col col-sm-3"><label for="proxyclienthost">Hostname/IP</label></div>
+          <div class="col">
+            <input id="proxyclienthost" type="text" class="form-control" data-bind="value: kccpConfig.hostname" placeholder="Enter host/IP (e.g. 127.0.0.1)">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="col col-sm-3"><label for="proxyclientport">Port</label></div>
+          <div class="col">
+            <input id="proxyclientport" type="number" class="form-control" data-bind="value: kccpConfig.port" placeholder="Enter port (e.g. 8081)">
+          </div>
+        </div>
+        <p>KCCacheProxy is built into Damecon. The hostname/port settings can be used to allow other KanColle clients to connect through this KCCP instance.</p>
+        <div class="form-row">
+          <div class="col col-sm-3"><label for="proxyclientport">Cache Location</label></div>
+          <div class="input-group col">
+            <input id="proxyclientport" type="text" class="form-control" data-bind="value: kccpConfig.cacheLocation" placeholder="Select cache location">
+            <div class=" input-group-append">
+              <button type="button" class="btn btn-secondary-sm">browse</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="verifycache" type="checkbox" data-bind="checked: kccpConfig.verifyCache"></input>
+          <label class="form-check-label" for="verifycache">Automatically verify cache integrity</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="disablebrowserCache" type="checkbox" data-bind="checked: kccpConfig.disableBrowserCache"></input>
+          <label class="form-check-label" for="disablebrowserCache">Disable browser caching</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="gadgetbypass" type="checkbox" data-bind="checked: kccpConfig.bypassGadgetUpdateCheck"></input>
+          <label class="form-check-label" for="gadgetbypass">Bypass gadget server</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" id="enablemodder" type="checkbox" data-bind="checked: kccpConfig.enableModder"></input>
+          <label class="form-check-label" for="enablemodder">Enable assets modifier</label>
+        </div>
+      </div>
+      <!-- ko if: kccpConfig.enableModder() -->
+      <h5>Asset mods</h5>
+      <div class="settings-group">
+        <div class="form-group">
+          <button type="button" class="btn btn-secondary" data-bind="click: addKccpMod">Add a patcher</button>
+          <button type="button" class="btn btn-secondary" data-bind="click: reloadKccpMods">Reload mod data</button>
+        </div>
+        <div class="form-items-scroller">
+          <!-- ko foreach: kccpConfig.current().mods -->
+          <div class="form-row">
+            <label data-bind="text: $data"></label>
+          </div>
+          <!-- /ko -->
+        </div>
+      </div>
+      <!-- /ko -->
       <!-- /ko -->
     </script>
 

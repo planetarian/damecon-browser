@@ -272,7 +272,8 @@ class WebUI {
       case 'update-process-started':
       case 'update-process-progress':
       case 'update-process-completed':
-        // worker -> main -> webui -> settings
+      case 'kccp-config-saved':
+        // (worker ->) main -> webui -> settings
         chrome.runtime.sendMessage(msg)
         break
       case 'webui-init':
@@ -304,6 +305,10 @@ class WebUI {
       case 'get-damecon-version':
       case 'get-config':
       case 'get-config-item':
+      case 'kccp-get-config':
+      case 'kccp-save-config':
+      case 'kccp-add-mod':
+      case 'kccp-reload-mods':
       case 'kc3-doupdate':
       case 'kc3-get-isupdating':
       case 'kc3-select-custom-location':
@@ -312,6 +317,7 @@ class WebUI {
         const result = await this.sendToMain(msg.type, msg.data)
         await this.getConfig()
         return result
+        return
       default:
         throw new Error(
           `webui.js received unknown message type from renderer:\n${JSON.stringify(msg)}`,

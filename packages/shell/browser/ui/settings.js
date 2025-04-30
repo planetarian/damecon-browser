@@ -28,6 +28,9 @@ class Settings {
   ]
 
   config = {}
+  kccpConfig = {
+    current: ko.observable(),
+  }
 
   version = ''
 
@@ -54,12 +57,57 @@ class Settings {
 
   downloads = ko.observableArray([])
 
-  convertPropertiesToObservables(obj) {
-    const newObj = {}
-    for (const key of Object.keys(obj)) {
-      if (Array.isArray(obj[key]))
-        newObj[key] = ko.observableArray(obj[key].map((p) => ko.observable(p)))
-      else newObj[key] = ko.observable(obj[key])
+  async prepKccpConfig() {
+    const current = await kccpConfigStore.all()
+    this.kccpConfig.current(current)
+    this.prepKccpConfigItems()
+  }
+
+  prepKccpConfigItems() {
+    const keys = [
+      'hostname',
+      'port',
+      'cacheLocation',
+      'disableBrowserCache',
+      'verifyCache',
+      'bypassGadgetUpdateCheck',
+      'enableModder',
+    ]
+    this.convertPropertiesToObservables(this.kccpConfig.current(), {
+      viewModel: this.kccpConfig,
+      keys,
+    })
+    for (const key of keys) {
+      this.kccpConfig[key].subscribe(async (newValue) => {
+        this.kccpConfig.current()[key] = newValue
+        await kccpConfigStore.save(this.kccpConfig.current())
+      })
+    }
+  }
+
+  async addKccpMod() {
+    await sendMessage('kccp-add-mod')
+  }
+
+  async reloadKccpMods() {
+    await sendMessage('kccp-reload-mods')
+  }
+
+  convertPropertiesToObservables(baseObj, opts) {
+    const newObj = opts?.viewModel ?? {}
+    for (const key of opts?.keys ?? Object.keys(baseObj)) {
+      const isFunc = typeof newObj === 'function'
+      if (Array.isArray(baseObj[key])) {
+        const newArr = baseObj[key].map((p) => ko.observable(p))
+        if (isFunc) newObj[key](newArr)
+        else newObj[key] = ko.observableArray(newArr)
+      } else {
+        if (isFunc) newObj[key](baseObj[key])
+        else newObj[key] = ko.observable(baseObj[key])
+      }
+      if (opts?.subscribeCallback) {
+        newObj[key].subscribe(opts.subscribeCallback)
+      }
     }
     return newObj
   }
@@ -277,6 +325,9 @@ class Settings {
               const processToRemove = this.processes().find((p) => p.name == msg.data.name)
               this.processes.remove(processToRemove)
               break
+            case 'kccp-config-saved':
+              await this.prepKccpConfig()
+              break
             default:
               throw new Error(`Unknown message type ${msg.type || '(none)'}`)
           }
@@ -337,6 +388,8 @@ class Settings {
       async () => await sendMessage('get-damecon-version'),
       'get-damecon-version',
     )
+
+    await this.prepKccpConfig()
 
     this.config = await this.prepConfigProperties()
     console.log('done prepping config', this.config)

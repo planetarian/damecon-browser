@@ -30,6 +30,15 @@ const configStore = {
   },
 }
 
+const kccpConfigStore = {
+  save: async function (config) {
+    return await sendMessage('kccp-save-config', config)
+  },
+  all: async function () {
+    return await sendMessage('kccp-get-config')
+  },
+}
+
 //
 // Rest are OK to use anywhere
 //
