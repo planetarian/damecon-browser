@@ -191,6 +191,7 @@ const getKccpConfig = async function () {
   if (modified) {
     setKccpConfig(config)
     kccp.ipc.send('reloadModCache')
+    await startStopKccp()
   }
 
   return { config, modInfo }
@@ -198,15 +199,30 @@ const getKccpConfig = async function () {
 
 const initKccp = function () {
   kccp.ipc.registerElectron(ipcMain, app)
+  kccp.config.loadConfig(app)
 }
 
-const startKccp = function () {
-  console.log(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy`)
-  kccp.config.loadConfig(app)
-  kccpProxy?.close()
-  kccpProxy = new kccp.Proxy()
-  kccpProxy.init()
-  kccpProxy.start()
+const startStopKccp = async function () {
+  try {
+    kccp.config.loadConfig(app)
+    const enabled = configStore.get('proxy.enable')
+    const mode = configStore.get('proxy.mode')
+
+    if (enabled !== true || mode !== 'kccp-internal') {
+      stopKccp()
+      return
+    }
+
+    console.log(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy`)
+
+    kccpProxy?.close()
+    kccpProxy = new kccp.Proxy()
+    await kccpProxy.init()
+    await kccpProxy.start()
+  } catch (error) {
+    console.error(`error occurred starting KCCacheProxy.`, error)
+    stopKccp()
+  }
 }
 
 const stopKccp = function () {
@@ -219,7 +235,7 @@ const stopKccp = function () {
 
 function getKccpModPath(kccpConfig) {
   return kccpConfig.mods.length > 0
-    ? join(kccpConfig.mods[kccpConfig.mods.length - 1].path, '..')
+    ? path.join(kccpConfig.mods[kccpConfig.mods.length - 1].path, '..')
     : undefined
 }
 
@@ -265,6 +281,7 @@ class TabbedBrowserWindow {
     this.webContents.loadURL(webuiUrl)
 
     queueMicrotask(async () => {
+      await startStopKccp()
       await this.applyProxy()
 
       for (const url in options.initialUrls) {
@@ -368,12 +385,10 @@ class TabbedBrowserWindow {
       if (mode.endsWith('-external')) {
         host = configStore.get('proxy.client.host')
         port = configStore.get('proxy.client.port')
-        stopKccp()
       } else {
         const kccpConfig = await getKccpConfig()
         host = kccpConfig.config.hostname
         port = kccpConfig.config.port
-        startKccp()
       }
       const data = this.generatePac(host, port, mode)
       const pacData =
@@ -382,7 +397,6 @@ class TabbedBrowserWindow {
       const proxyConfig = { mode: 'pac_script', pacScript: pacData }
       await this.window.webContents.session.setProxy(proxyConfig)
     } else {
-      stopKccp()
       await this.window.webContents.session.setProxy({ mode: 'system' })
     }
   }
@@ -668,6 +682,7 @@ class Browser {
         case 'set-config-item':
           result = configStore.set(data.key, data.value)
           if (data.key.startsWith('proxy.')) {
+            await startStopKccp()
             await win.applyProxy()
           } else if (data.key == 'kc3kai.update.channel') {
             if (kc3ExtensionId) this.session.removeExtension(kc3ExtensionId)
@@ -718,8 +733,9 @@ class Browser {
           result = await getKccpConfig()
           break
         case 'kccp-save-config':
-          kccp.config.setConfig(data, true)
-          win.applyProxy()
+          setKccpConfig(data)
+          await startStopKccp()
+          await win.applyProxy() // reapply to react to updated ip/port
           break
         case 'kccp-add-mod':
           const kccpConfig = await getKccpConfig()
@@ -741,10 +757,11 @@ class Browser {
           }
           kccpConfig.config.mods.push({ path: response.filePaths[0] })
           setKccpConfig(kccpConfig.config)
-
+          await startStopKccp()
+          await win.applyProxy()
           break
         case 'kccp-reload-mods':
-          await kccp.ipc.reloadModCache()
+          kccp.ipc.send('reloadModCache')
           break
       }
       return result

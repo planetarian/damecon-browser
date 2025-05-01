@@ -75,20 +75,51 @@ class Settings {
       'bypassGadgetUpdateCheck',
       'enableModder',
     ]
-    this.convertPropertiesToObservables(this.kccpConfig.current(), {
-      viewModel: this.kccpConfig,
+    const cfg = this.kccpConfig
+    this.convertPropertiesToObservables(cfg.current(), {
+      viewModel: cfg,
       keys,
     })
     for (const key of keys) {
-      this.kccpConfig[key].subscribe(async (newValue) => {
-        this.kccpConfig.current()[key] = newValue
-        await kccpConfigStore.save(this.kccpConfig.current())
+      if (cfg[key].getSubscriptionsCount() === 0) {
+        cfg[key].subscribe(async (newValue) => {
+          cfg.current()[key] = newValue
+          await kccpConfigStore.save(cfg.current())
+        })
+      }
+    }
+    if (!cfg.initialized) {
+      cfg.useCacheLocation = ko.observable(cfg.cacheLocation() !== 'default')
+      cfg.useCacheLocation.subscribe((newValue) => {
+        if (!newValue) cfg.cacheLocation('default')
       })
+      cfg.initialized = true
     }
   }
 
   async addKccpMod() {
     await sendMessage('kccp-add-mod')
+  }
+
+  async removeKccpMod(path) {
+    const cfg = this.kccpConfig.current()
+    const ind = cfg.mods.findIndex((m) => m.path == path)
+    cfg.mods.splice(ind, 1)
+    await kccpConfigStore.save(cfg)
+  }
+
+  async moveKccpMod(path, dir) {
+    const cfg = this.kccpConfig.current()
+    const ind = cfg.mods.findIndex((m) => m.path == path)
+    const mod = cfg.mods.find((m) => m.path == path)
+    const newIdx = ind + dir
+    if (newIdx < 0 || newIdx >= cfg.mods.length) {
+      console.error('Tried to move a mod out of range.')
+      return
+    }
+    cfg.mods.splice(ind, 1)
+    cfg.mods.splice(ind + dir, 0, mod)
+    await kccpConfigStore.save(cfg)
   }
 
   async reloadKccpMods() {
@@ -98,7 +129,7 @@ class Settings {
   convertPropertiesToObservables(baseObj, opts) {
     const newObj = opts?.viewModel ?? {}
     for (const key of opts?.keys ?? Object.keys(baseObj)) {
-      const isFunc = typeof newObj === 'function'
+      const isFunc = typeof newObj[key] === 'function'
       if (Array.isArray(baseObj[key])) {
         const newArr = baseObj[key].map((p) => ko.observable(p))
         if (isFunc) newObj[key](newArr)

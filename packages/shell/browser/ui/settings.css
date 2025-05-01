@@ -139,8 +139,12 @@
   margin: 0;
 }
 .form-check {
-  padding-top: 8px;
-  height: calc(2.25rem + 2px);
+  display: flex;
+  min-height: calc(1.8rem + 2px);
+  align-items: center;
+}
+.form-check-label {
+  margin-top: 3px;
 }
 /* not really supposed to use tehse combined like this but w/e */
 .form-control.col {
@@ -153,6 +157,7 @@
   column-gap: 20px;
 }
 
+.kccp-mod,
 .download-item {
   padding: 6px;
   margin-bottom: 0;
@@ -164,26 +169,32 @@
 .download-item label {
   cursor: pointer;
 }
+.kccp-mod,
 .download-info {
   display: flex;
   padding-left: 4px;
 }
+.kccp-mod:hover,
 .download-item:hover {
   background: var(--content-hover-color);
 }
+.kccp-mod .kccp-mod-label,
 .download-item .download-label {
   font-size: small;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
+.kccp-mod .kccp-mod-label label,
 .download-item .download-label label {
   margin: 0;
 }
+.kccp-mod .controls,
 .download-item .controls {
   display: flex;
   flex-wrap: nowrap;
 }
+.kccp-mod button,
 .download-item button {
   margin-left: 2px;
   width: 28px;
@@ -191,6 +202,7 @@
   font-size: 8pt;
   display: none;
 }
+.kccp-mod:hover button,
 .download-item:hover button {
   display: inline;
 }
@@ -203,9 +215,10 @@
 .download-item .progress {
   height: 2px;
 }
+.subtext,
 .download-info .bytes-received {
   opacity: 0.5;
-  display: flex;
+  display: inline-flex;
   flex-wrap: nowrap;
 }
 .download-info .bytes-received label {

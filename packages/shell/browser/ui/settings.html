@@ -241,27 +241,30 @@
       <h5>Built-in KCCacheProxy</h5>
       <div class="settings-group">
         <div class="form-row">
-          <div class="col col-sm-3"><label for="proxyclienthost">Hostname/IP</label></div>
+          <div class="col-sm-3"><label for="proxyclienthost">Hostname/IP</label></div>
           <div class="col">
             <input id="proxyclienthost" type="text" class="form-control" data-bind="value: kccpConfig.hostname" placeholder="Enter host/IP (e.g. 127.0.0.1)">
           </div>
         </div>
         <div class="form-row">
-          <div class="col col-sm-3"><label for="proxyclientport">Port</label></div>
+          <div class="col-sm-3"><label for="proxyclientport">Port</label></div>
           <div class="col">
             <input id="proxyclientport" type="number" class="form-control" data-bind="value: kccpConfig.port" placeholder="Enter port (e.g. 8081)">
           </div>
         </div>
         <p>KCCacheProxy is built into Damecon. The hostname/port settings can be used to allow other KanColle clients to connect through this KCCP instance.</p>
-        <div class="form-row">
-          <div class="col col-sm-3"><label for="proxyclientport">Cache Location</label></div>
-          <div class="input-group col">
-            <input id="proxyclientport" type="text" class="form-control" data-bind="value: kccpConfig.cacheLocation" placeholder="Select cache location">
-            <div class=" input-group-append">
-              <button type="button" class="btn btn-secondary-sm">browse</button>
-            </div>
+        <div class="form-check">
+          <input class="form-check-input" id="useproxycachelocation" type="checkbox" data-bind="checked: kccpConfig.useCacheLocation"></input>
+          <label class="form-check-label" for="useproxycachelocation">Custom Cache Location</label>
+        </div>
+        <!-- ko if: kccpConfig.useCacheLocation -->
+        <div class="input-group col">
+          <input id="proxycachelocation" type="text" class="form-control" data-bind="value: kccpConfig.cacheLocation, enable: kccpConfig.useCacheLocation" placeholder="Select cache location">
+          <div class=" input-group-append">
+            <button type="button" class="btn btn-secondary-sm" data-bind="enable: kccpConfig.useCacheLocation">browse</button>
           </div>
         </div>
+        <!-- /ko -->
         <div class="form-check">
           <input class="form-check-input" id="verifycache" type="checkbox" data-bind="checked: kccpConfig.verifyCache"></input>
           <label class="form-check-label" for="verifycache">Automatically verify cache integrity</label>
@@ -276,7 +279,7 @@
         </div>
         <div class="form-check">
           <input class="form-check-input" id="enablemodder" type="checkbox" data-bind="checked: kccpConfig.enableModder"></input>
-          <label class="form-check-label" for="enablemodder">Enable assets modifier</label>
+          <label class="form-check-label" for="enablemodder">Enable asset modifiers</label>
         </div>
       </div>
       <!-- ko if: kccpConfig.enableModder() -->
@@ -287,10 +290,26 @@
           <button type="button" class="btn btn-secondary" data-bind="click: reloadKccpMods">Reload mod data</button>
         </div>
         <div class="form-items-scroller">
-          <!-- ko foreach: kccpConfig.modInfo() -->
-          <div class="form-group">
-            <span data-bind="text: `${$index()+1}.`"></span>
-            <span data-bind="text: info.name"></span>
+          <!-- ko foreach: kccpConfig.modInfo -->
+          <div class="kccp-mod">
+            <div class="kccp-mod-label">
+              <div>
+                <span data-bind="text: `${$index()+1}.`"></span>
+                <span data-bind="text: info.name"></span>
+                <span data-bind="text: info.version" class="subtext"></span>
+              </div>
+              <span class="subtext" data-bind="text: info.authors.join(', ')"></span>
+            </div>
+            <div class="controls">
+              <!-- ko if: $index() > 0 -->
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => $parent.moveKccpMod($data.path, -1)" title="web site"><i class="fa-solid fa-arrow-up"></i></button>
+              <!-- /ko -->
+              <!-- ko if: $index() < $parent.kccpConfig.modInfo().length-1 -->
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => $parent.moveKccpMod($data.path, 1)" title="web site"><i class="fa-solid fa-arrow-down"></i></button>
+              <!-- /ko -->
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => chrome.tabs.create({url: $data.info.url})" title="web site"><i class="fa-solid fa-globe"></i></button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-bind="click: () => $parent.removeKccpMod($data.path)" title="remove"><i class="fa-regular fa-trash-can"></i></button>
+            </div>
           </div>
           <!-- /ko -->
         </div>
