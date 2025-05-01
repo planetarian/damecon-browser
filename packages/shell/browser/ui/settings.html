@@ -287,9 +287,10 @@
           <button type="button" class="btn btn-secondary" data-bind="click: reloadKccpMods">Reload mod data</button>
         </div>
         <div class="form-items-scroller">
-          <!-- ko foreach: kccpConfig.current().mods -->
-          <div class="form-row">
-            <label data-bind="text: $data"></label>
+          <!-- ko foreach: kccpConfig.modInfo() -->
+          <div class="form-group">
+            <span data-bind="text: `${$index()+1}.`"></span>
+            <span data-bind="text: info.name"></span>
           </div>
           <!-- /ko -->
         </div>

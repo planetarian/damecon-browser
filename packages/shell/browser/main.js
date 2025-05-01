@@ -110,7 +110,90 @@ const setKccpConfig = function (kccpConfig) {
     console.log('No windows to report to.')
     return
   }
-  windows[0].webContents.send('kccp-config-saved')
+  windows[0].webContents.send('webui-message', {
+    type: 'kccp-config-saved',
+    data: { config: kccpConfig },
+  })
+}
+
+const getKccpConfig = async function () {
+  const config = kccp.config.getConfig()
+  const modInfo = []
+  let modified = false
+
+  for (const mod of config.mods) {
+    const path = mod.path
+    const exists = fsSync.existsSync(path)
+    const info = {}
+    Object.assign(info, mod)
+    info.exists = exists
+
+    if (!exists) {
+      dialog.showMessageBoxSync(this, {
+        type: 'info',
+        buttons: ['OK'],
+        title: 'Mod not found',
+        message: `Couldn't find a KCCP mod in this location.\nlocation: ${mod.path}`,
+      })
+    } else {
+      try {
+        const modData = JSON.parse(fsSync.readFileSync(mod.path))
+        info.info = modData
+        if (modData.updateUrl) {
+          if (mod.lastCheck == undefined || mod.lastCheck < Date.now() - 3 * 60 * 60 * 1000) {
+            try {
+              mod.lastCheck = Date.now()
+              console.log(`>> checking for update for KCCP mod ${modData.name}`)
+              const response = await fetch(modData.updateUrl)
+              const updateJson = await response.json()
+              const oldVersion = mod.latestVersion
+              mod.latestVersion = updateJson.version
+              mod.url = updateJson.downloadUrl || updateJson.url || updateJson.updateUrl
+
+              modified = true
+            } catch (error) {
+              console.error(
+                `failed to check for updates for KCCP mod ${mod.name} at ${mod.updateUrl}`,
+              )
+            }
+          }
+        }
+
+        if (modData.requireScripts && !mod.allowScripts) {
+          const message = `The mod '${modData.name}' (${mod.path}) requires scripts to be enabled. Do you trust this mod?`
+          const resp = dialog.showMessageBoxSync(this, {
+            type: 'question',
+            buttons: ['Yes', 'No'],
+            title: 'Mod Scripts',
+            message,
+          })
+          if (resp == 1) {
+            const ind = config.mods.indexOf(mod)
+            config.mods.splice(ind, 1)
+            continue
+          }
+          mod.allowScripts = true
+          modified = true
+        }
+      } catch (error) {
+        dialog.showMessageBoxSync(this, {
+          type: 'info',
+          buttons: ['OK'],
+          title: 'Mod load error',
+          message: `Failed to load metadata for mod.\nlocation: ${mod.path}\nerror:${error}`,
+        })
+      }
+    }
+
+    modInfo.push(info)
+  }
+
+  if (modified) {
+    setKccpConfig(config)
+    kccp.ipc.send('reloadModCache')
+  }
+
+  return { config, modInfo }
 }
 
 const initKccp = function () {
@@ -287,9 +370,9 @@ class TabbedBrowserWindow {
         port = configStore.get('proxy.client.port')
         stopKccp()
       } else {
-        const kccpConfig = kccp.config.getConfig()
-        host = kccpConfig.hostname
-        port = kccpConfig.port
+        const kccpConfig = await getKccpConfig()
+        host = kccpConfig.config.hostname
+        port = kccpConfig.config.port
         startKccp()
       }
       const data = this.generatePac(host, port, mode)
@@ -632,32 +715,32 @@ class Browser {
           this.confirmCloseTab(data.tabId)
           break
         case 'kccp-get-config':
-          result = kccp.config.getConfig()
+          result = await getKccpConfig()
           break
         case 'kccp-save-config':
           kccp.config.setConfig(data, true)
           win.applyProxy()
           break
         case 'kccp-add-mod':
-          const kccpConfig = kccp.config.getConfig()
+          const kccpConfig = await getKccpConfig()
           const response = await dialog.showOpenDialog({
             title: 'Select a mod metadata file',
             filters: [
               {
                 name: 'Mod metadata',
-                defaultPath: getKccpModPath(kccpConfig),
+                defaultPath: getKccpModPath(kccpConfig.config),
                 extensions: ['mod.json'],
               },
             ],
             properties: ['openFile'],
           })
           if (response.canceled) return
-          if (kccpConfig.mods.map((m) => m.path).includes(response.filePaths[0])) {
+          if (kccpConfig.config.mods.map((m) => m.path).includes(response.filePaths[0])) {
             console.error('error', new Date(), 'Mod already added')
             return
           }
-          kccpConfig.mods.push({ path: response.filePaths[0] })
-          setKccpConfig(kccpConfig)
+          kccpConfig.config.mods.push({ path: response.filePaths[0] })
+          setKccpConfig(kccpConfig.config)
 
           break
         case 'kccp-reload-mods':

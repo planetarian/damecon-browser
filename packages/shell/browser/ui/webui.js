@@ -317,7 +317,6 @@ class WebUI {
         const result = await this.sendToMain(msg.type, msg.data)
         await this.getConfig()
         return result
-        return
       default:
         throw new Error(
           `webui.js received unknown message type from renderer:\n${JSON.stringify(msg)}`,

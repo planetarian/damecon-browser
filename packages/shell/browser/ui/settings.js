@@ -30,6 +30,7 @@ class Settings {
   config = {}
   kccpConfig = {
     current: ko.observable(),
+    modInfo: ko.observable(),
   }
 
   version = ''
@@ -59,7 +60,8 @@ class Settings {
 
   async prepKccpConfig() {
     const current = await kccpConfigStore.all()
-    this.kccpConfig.current(current)
+    this.kccpConfig.current(current.config)
+    this.kccpConfig.modInfo(current.modInfo)
     this.prepKccpConfigItems()
   }
 
