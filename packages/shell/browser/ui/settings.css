@@ -163,9 +163,9 @@
   margin-bottom: 0;
   min-height: 40px;
   border-radius: 6px;
-  cursor: pointer;
   position: relative;
 }
+.download-item,
 .download-item label {
   cursor: pointer;
 }
