@@ -272,6 +272,7 @@ class WebUI {
       case 'update-process-started':
       case 'update-process-progress':
       case 'update-process-completed':
+      case 'kccp-status':
       case 'kccp-config-saved':
         // (worker ->) main -> webui -> settings
         chrome.runtime.sendMessage(msg)
@@ -305,10 +306,18 @@ class WebUI {
       case 'get-damecon-version':
       case 'get-config':
       case 'get-config-item':
+      case 'kccp-get-status':
       case 'kccp-get-config':
       case 'kccp-save-config':
+      case 'kccp-import-cache':
+      case 'kccp-reload-cache':
+      case 'kccp-verify-cache':
       case 'kccp-add-mod':
       case 'kccp-reload-mods':
+      case 'kccp-prepatch':
+      case 'kccp-extract-spritesheet':
+      case 'kccp-make-outlines':
+      case 'kccp-convert-poi':
       case 'kc3-doupdate':
       case 'kc3-get-isupdating':
       case 'kc3-select-custom-location':

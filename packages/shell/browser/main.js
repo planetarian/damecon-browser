@@ -35,6 +35,7 @@ import kc3UpdateWorker from 'worker-loader!./workers/kc3update-worker.js'
 // KCCP
 const kccp = require('../../kccacheproxy/src/proxy/proxy.js')
 let kccpProxy
+let kccpStatus = { started: false, busy: false, busyActions: 0 }
 
 const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
 const cfg = configStore.all
@@ -103,8 +104,107 @@ const manifestExists = async (dirPath) => {
   }
 }
 
-const setKccpConfig = function (kccpConfig) {
-  kccp.config.setConfig(kccpConfig, true)
+const kccpSendStatusUpdate = function () {
+  kccpStatus.busy = kccpStatus.busyActions > 0
+  const windows = BrowserWindow.getAllWindows()
+  windows[0].webContents.send('webui-message', { type: 'kccp-status', data: kccpStatus })
+}
+
+const getKccpConfig = async function () {
+  while (kccpStatus.busy) {
+    console.log('KCCP currently busy, waiting...')
+    await setTimeout(1000)
+  }
+
+  kccpStatus.busyActions++
+  kccpSendStatusUpdate()
+  try {
+    const config = kccp.config.getConfig()
+    const modInfo = []
+    let modified = false
+
+    for (const mod of config.mods) {
+      const path = mod.path
+      const exists = fsSync.existsSync(path)
+      const info = {}
+      Object.assign(info, mod)
+      info.exists = exists
+
+      if (!exists) {
+        dialog.showMessageBoxSync(this, {
+          type: 'info',
+          buttons: ['OK'],
+          title: 'Mod not found',
+          message: `Couldn't find a KCCP mod in this location.\nlocation: ${mod.path}`,
+        })
+      } else {
+        try {
+          const modData = JSON.parse(fsSync.readFileSync(mod.path))
+          info.info = modData
+          if (modData.updateUrl) {
+            if (mod.lastCheck == undefined || mod.lastCheck < Date.now() - 3 * 60 * 60 * 1000) {
+              try {
+                mod.lastCheck = Date.now()
+                console.log(`>> checking for update for KCCP mod ${modData.name}`)
+                const response = await fetch(modData.updateUrl)
+                const updateJson = await response.json()
+                const oldVersion = mod.latestVersion
+                mod.latestVersion = updateJson.version
+                mod.url = updateJson.downloadUrl || updateJson.url || updateJson.updateUrl
+
+                modified = true
+              } catch (error) {
+                console.error(
+                  `failed to check for updates for KCCP mod ${mod.name} at ${mod.updateUrl}`,
+                )
+              }
+            }
+          }
+
+          if (modData.requireScripts && !mod.allowScripts) {
+            const message = `The mod '${modData.name}' (${mod.path}) requires scripts to be enabled. Do you trust this mod?`
+            const resp = dialog.showMessageBoxSync(this, {
+              type: 'question',
+              buttons: ['Yes', 'No'],
+              title: 'Mod Scripts',
+              message,
+            })
+            if (resp == 1) {
+              const ind = config.mods.indexOf(mod)
+              config.mods.splice(ind, 1)
+              continue
+            }
+            mod.allowScripts = true
+            modified = true
+          }
+        } catch (error) {
+          dialog.showMessageBoxSync(this, {
+            type: 'info',
+            buttons: ['OK'],
+            title: 'Mod load error',
+            message: `Failed to load metadata for mod.\nlocation: ${mod.path}\nerror:${error}`,
+          })
+        }
+      }
+
+      modInfo.push(info)
+    }
+
+    if (modified) {
+      await setKccpConfig(config)
+      kccp.ipc.send('reloadModCache')
+      await startStopKccp(kccpStatus.busyActions)
+    }
+
+    return { config, modInfo, modified }
+  } finally {
+    kccpStatus.busyActions--
+    kccpSendStatusUpdate()
+  }
+}
+
+const setKccpConfig = async function (kccpConfig) {
+  await kccp.config.setConfig(kccpConfig, true)
   const windows = BrowserWindow.getAllWindows()
   if (windows.length == 0) {
     console.log('No windows to report to.')
@@ -116,95 +216,20 @@ const setKccpConfig = function (kccpConfig) {
   })
 }
 
-const getKccpConfig = async function () {
-  const config = kccp.config.getConfig()
-  const modInfo = []
-  let modified = false
-
-  for (const mod of config.mods) {
-    const path = mod.path
-    const exists = fsSync.existsSync(path)
-    const info = {}
-    Object.assign(info, mod)
-    info.exists = exists
-
-    if (!exists) {
-      dialog.showMessageBoxSync(this, {
-        type: 'info',
-        buttons: ['OK'],
-        title: 'Mod not found',
-        message: `Couldn't find a KCCP mod in this location.\nlocation: ${mod.path}`,
-      })
-    } else {
-      try {
-        const modData = JSON.parse(fsSync.readFileSync(mod.path))
-        info.info = modData
-        if (modData.updateUrl) {
-          if (mod.lastCheck == undefined || mod.lastCheck < Date.now() - 3 * 60 * 60 * 1000) {
-            try {
-              mod.lastCheck = Date.now()
-              console.log(`>> checking for update for KCCP mod ${modData.name}`)
-              const response = await fetch(modData.updateUrl)
-              const updateJson = await response.json()
-              const oldVersion = mod.latestVersion
-              mod.latestVersion = updateJson.version
-              mod.url = updateJson.downloadUrl || updateJson.url || updateJson.updateUrl
-
-              modified = true
-            } catch (error) {
-              console.error(
-                `failed to check for updates for KCCP mod ${mod.name} at ${mod.updateUrl}`,
-              )
-            }
-          }
-        }
-
-        if (modData.requireScripts && !mod.allowScripts) {
-          const message = `The mod '${modData.name}' (${mod.path}) requires scripts to be enabled. Do you trust this mod?`
-          const resp = dialog.showMessageBoxSync(this, {
-            type: 'question',
-            buttons: ['Yes', 'No'],
-            title: 'Mod Scripts',
-            message,
-          })
-          if (resp == 1) {
-            const ind = config.mods.indexOf(mod)
-            config.mods.splice(ind, 1)
-            continue
-          }
-          mod.allowScripts = true
-          modified = true
-        }
-      } catch (error) {
-        dialog.showMessageBoxSync(this, {
-          type: 'info',
-          buttons: ['OK'],
-          title: 'Mod load error',
-          message: `Failed to load metadata for mod.\nlocation: ${mod.path}\nerror:${error}`,
-        })
-      }
-    }
-
-    modInfo.push(info)
-  }
-
-  if (modified) {
-    setKccpConfig(config)
-    kccp.ipc.send('reloadModCache')
-    await startStopKccp()
-  }
-
-  return { config, modInfo }
-}
-
 const initKccp = function () {
   kccp.ipc.registerElectron(ipcMain, app)
   kccp.config.loadConfig(app)
 }
 
-const startStopKccp = async function () {
+const startStopKccp = async function (expectedBusyActions = 0) {
+  while (kccpStatus.busyActions > expectedBusyActions) {
+    console.log('KCCP currently busy, waiting...')
+    await setTimeout(1000)
+  }
+  kccpStatus.busyActions++
+  kccpStatus.started = false
+  kccpSendStatusUpdate()
   try {
-    kccp.config.loadConfig(app)
     const enabled = configStore.get('proxy.enable')
     const mode = configStore.get('proxy.mode')
 
@@ -213,15 +238,32 @@ const startStopKccp = async function () {
       return
     }
 
-    console.log(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy`)
+    console.trace(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy (trace)`)
 
-    kccpProxy?.close()
+    if (kccpProxy) {
+      kccpProxy.close()
+      console.log('>> waiting for KCCacheProxy to stop listening...')
+      while (kccpProxy.server.listening) {
+        await setTimeout(10)
+      }
+      console.log('! KCCacheProxy stopped listening.')
+    }
+
     kccpProxy = new kccp.Proxy()
     await kccpProxy.init()
     await kccpProxy.start()
+    console.log('>> waiting for KCCacheProxy to start listening...')
+    while (!kccpProxy.server.listening) {
+      await setTimeout(10)
+    }
+    console.log('! KCCacheProxy now listening.')
   } catch (error) {
     console.error(`error occurred starting KCCacheProxy.`, error)
     stopKccp()
+  } finally {
+    kccpStatus.busyActions--
+    kccpStatus.started = true
+    kccpSendStatusUpdate()
   }
 }
 
@@ -237,6 +279,13 @@ function getKccpModPath(kccpConfig) {
   return kccpConfig.mods.length > 0
     ? path.join(kccpConfig.mods[kccpConfig.mods.length - 1].path, '..')
     : undefined
+}
+function getKccpImgCachePath(kccpConfig) {
+  let cachePath = kccpConfig.cacheLocation
+  if (config.cacheLocation == undefined || config.cacheLocation == 'default')
+    cachePath = path.join(app.getPath('userData'), 'ProxyData', 'cache')
+  cachePath = path.join(cachePath, 'kcs2', 'img')
+  return cachePath
 }
 
 const getParentWindowOfTab = (tab) => {
@@ -669,6 +718,7 @@ class Browser {
       //console.log('main.js received message from webui.js', type, data)
 
       let result
+      let kccpConfig, cachePath, source, target // reusables
       switch (type) {
         case 'get-damecon-version':
           result = `${app.getName()} v${app.getVersion()}`
@@ -729,17 +779,126 @@ class Browser {
           //console.log('clicked tab X', data)
           this.confirmCloseTab(data.tabId)
           break
+        case 'kccp-get-status':
+          result = kccpStatus
+          break
         case 'kccp-get-config':
           result = await getKccpConfig()
           break
         case 'kccp-save-config':
-          setKccpConfig(data)
+          await setKccpConfig(data)
           await startStopKccp()
           await win.applyProxy() // reapply to react to updated ip/port
           break
+        case 'kccp-import-cache':
+          if (data.builtIn) {
+            kccp.ipc.send('importCache')
+          } else {
+            const response = await dialog.showOpenDialog({
+              title: 'Select cache dump .zip file',
+              filters: [
+                {
+                  name: '.zip files',
+                  extensions: ['zip'],
+                },
+              ],
+              properties: ['openFile'],
+            })
+            if (!response.canceled) {
+              kccp.ipc.send('importCache', response.filePaths[0])
+            }
+          }
+          break
+        case 'kccp-verify-cache':
+          const verifyResponse = dialog.showMessageBoxSync({
+            type: 'question',
+            title: 'Delete invalid files?',
+            buttons: ['Cancel', 'Delete', 'Keep'],
+            message: 'Delete invalid files?',
+            detail:
+              'Cached files created in an old version might count as invalid and will be deleted.',
+            defaultId: 0,
+            cancelId: 1,
+          })
+          if (verifyResponse === 0) return
+          kccp.ipc.send('verifyCache', verifyResponse === 1)
+          break
+        case 'kccp-extract-spritesheet':
+          kccpConfig = await getKccpConfig()
+          cachePath = await getKccpImgCachePath(kccpConfig.config)
+          source = await dialog.showOpenDialog({
+            title: 'Select a spritesheet',
+            defaultPath: cachePath,
+            filters: [
+              {
+                name: 'Spritesheet image',
+                extensions: ['png'],
+              },
+            ],
+            properties: ['openFile'],
+          })
+          if (source.canceled) return
+
+          target = await dialog.showOpenDialog({
+            title: 'Select a folder to extract to',
+            defaultPath: getKccpModPath(kccpConfig.config),
+            properties: ['openDirectory'],
+          })
+          if (target.canceled) return
+
+          kccp.ipc.send('extractSpritesheet', source.filePaths[0], target.filePaths[0])
+          break
+        case 'kccp-make-outlines':
+          kccpConfig = await getKccpConfig()
+          cachePath = await getKccpImgCachePath(kccpConfig.config)
+          source = await dialog.showOpenDialog({
+            title: 'Select a spritesheet',
+            defaultPath: cachePath,
+            filters: [
+              {
+                name: 'Spritesheet image',
+                extensions: ['png'],
+              },
+            ],
+            properties: ['openFile'],
+          })
+          if (source.canceled) return
+
+          target = await dialog.showSaveDialog({
+            title: 'Select a location to save outlines to',
+            defaultPath: await getModPath(kccpConfig.config),
+            filters: [
+              {
+                name: 'Images',
+                extensions: ['png'],
+              },
+            ],
+          })
+          if (target.canceled) return
+
+          kccp.ipc.send('outlines', source.filePaths[0], target.filePath)
+          break
+        case 'kccp-convert-poi':
+          kccpConfig = await getKccpConfig()
+          source = await dialog.showOpenDialog({
+            title: 'Select cache folder to import from',
+            defaultPath: getModPath(kccpConfig.config),
+            properties: ['openDirectory'],
+          })
+          if (source.canceled) return
+
+          target = await dialog.showOpenDialog({
+            title: 'Select a folder to export to',
+            defaultPath: getModPath(kccpConfig.config),
+            properties: ['openDirectory'],
+          })
+          if (target.canceled) return
+
+          kccp.ipc.send('importExternalMod', source.filePaths[0], target.filePaths[0])
+          break
         case 'kccp-add-mod':
-          const kccpConfig = await getKccpConfig()
-          const response = await dialog.showOpenDialog({
+          kccpConfig = await getKccpConfig()
+          const addModResponse = await dialog.showOpenDialog({
             title: 'Select a mod metadata file',
             filters: [
               {
@@ -750,18 +909,24 @@ class Browser {
             ],
             properties: ['openFile'],
           })
-          if (response.canceled) return
-          if (kccpConfig.config.mods.map((m) => m.path).includes(response.filePaths[0])) {
+          if (addModResponse.canceled) return
+          if (kccpConfig.config.mods.map((m) => m.path).includes(addModResponse.filePaths[0])) {
             console.error('error', new Date(), 'Mod already added')
             return
           }
-          kccpConfig.config.mods.push({ path: response.filePaths[0] })
-          setKccpConfig(kccpConfig.config)
-          await startStopKccp()
+          kccpConfig.config.mods.push({ path: addModResponse.filePaths[0] })
+          await setKccpConfig(kccpConfig.config)
+          //await startStopKccp() // will automatically start when fetching the config and checking for updates
           await win.applyProxy()
           break
         case 'kccp-reload-mods':
           kccp.ipc.send('reloadModCache')
+          break
+        case 'kccp-reload-cache':
+          kccp.ipc.send('reloadCache')
+          break
+        case 'kccp-prepatch':
+          kccp.ipc.send('prepatch')
           break
       }
       return result

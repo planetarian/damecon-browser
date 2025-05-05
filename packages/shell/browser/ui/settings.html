@@ -214,13 +214,13 @@
 
     <script type="text/html" id="settings-content-2">
       <h3>Proxy Settings</h3>
-      <div class="settings-group">
-        <div class="form-check">
-          <input class="form-check-input" id="proxyenable" type="checkbox" data-bind="checked: config.proxy.enable"></input>
-          <label class="form-check-label" for="proxyenable">Enabled</label>
-        </div>
-        <div class="form-row">
-          <label for="proxymode" class="col-sm-3">Mode</label>
+      <div class="settings-group" data-bind="enable: !kccpStatus.busy">
+        <div class="form-check form-row row">
+          <div class="form-check col-sm-3">
+            <input class="form-check-input" id="proxyenable" type="checkbox" data-bind="checked: config.proxy.enable"></input>
+            <label class="form-check-label" for="proxyenable">Enabled</label>
+          </div>
+          <label class="form-check-label" for="proxymode" class="col-sm-3">Mode</label>
           <select id="proxymode" class="col form-control" data-bind="options: configSchema.proxy.mode.options, value: config.proxy.mode"></select>
         </div>
       </div>
@@ -239,7 +239,7 @@
       <!-- /ko -->
       <!-- ko if: config.proxy.mode() === 'kccp-internal' -->
       <h5>Built-in KCCacheProxy</h5>
-      <div class="settings-group">
+      <div class="settings-group" data-bind="enable: !kccpStatus.busy">
         <div class="form-row">
           <div class="col-sm-3"><label for="proxyclienthost">Hostname/IP</label></div>
           <div class="col">
@@ -281,14 +281,24 @@
           <input class="form-check-input" id="enablemodder" type="checkbox" data-bind="checked: kccpConfig.enableModder"></input>
           <label class="form-check-label" for="enablemodder">Enable asset modifiers</label>
         </div>
+        <div class="form-group mt-3">
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpReloadCache" title="reload KCCP cache">Reload cache</button>
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpVerifyCache" title="verify KCCP cache">Verify cache (may take a bit)</button>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpImportBasicCacheDump" title="import built-in basic cache">Import built-in basic cache dump</button>
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpImportCacheDump" title="import cache dump">Import cache dump</button>
+        </div>
+        <div class="form-group">
+          <span><a href="https://github.com/Tibowl/KCCacheProxy/wiki/Configuration">Configuration help</a></span>
+        </div>
+        <div class="form-group">
+          <span><a href="https://github.com/Tibowl/KCCacheProxy/wiki/Installation-and-setup#using-cache-dumps">Where/how to get cache dumps</a></span>
+        </div>
       </div>
       <!-- ko if: kccpConfig.enableModder() -->
       <h5>Asset mods</h5>
-      <div class="settings-group">
-        <div class="form-group">
-          <button type="button" class="btn btn-secondary" data-bind="click: addKccpMod">Add a patcher</button>
-          <button type="button" class="btn btn-secondary" data-bind="click: reloadKccpMods">Reload mod data</button>
-        </div>
+      <div class="settings-group" data-bind="enable: !kccpStatus.busy">
         <div class="form-items-scroller">
           <!-- ko foreach: kccpConfig.modInfo -->
           <div class="kccp-mod">
@@ -296,22 +306,38 @@
               <div>
                 <span data-bind="text: `${$index()+1}.`"></span>
                 <span data-bind="text: info.name"></span>
-                <span data-bind="text: info.version" class="subtext"></span>
+                <span data-bind="text: `v${info.version}`" class="subtext"></span>
+                <!-- ko if: $data.latestVersion && $data.latestVersion != $data.info.version -->
+                <a href="#" data-bind="click: () => chrome.tabs.create({url: info.url})" title="update available">
+                  <span data-bind="text: `v${latestVersion} available!`" class="badge badge-info"></span> 
+                </a>
+                <!-- /ko -->
               </div>
               <span class="subtext" data-bind="text: info.authors.join(', ')"></span>
             </div>
             <div class="controls">
               <!-- ko if: $index() > 0 -->
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => $parent.moveKccpMod($data.path, -1)" title="web site"><i class="fa-solid fa-arrow-up"></i></button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => $parent.kccpMoveMod($data.path, -1)" title="web site"><i class="fa-solid fa-arrow-up"></i></button>
               <!-- /ko -->
               <!-- ko if: $index() < $parent.kccpConfig.modInfo().length-1 -->
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => $parent.moveKccpMod($data.path, 1)" title="web site"><i class="fa-solid fa-arrow-down"></i></button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => $parent.kccpMoveMod($data.path, 1)" title="web site"><i class="fa-solid fa-arrow-down"></i></button>
               <!-- /ko -->
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => chrome.tabs.create({url: $data.info.url})" title="web site"><i class="fa-solid fa-globe"></i></button>
-              <button type="button" class="btn btn-outline-danger btn-sm" data-bind="click: () => $parent.removeKccpMod($data.path)" title="remove"><i class="fa-regular fa-trash-can"></i></button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bind="click: () => chrome.tabs.create({url: info.url})" title="web site"><i class="fa-solid fa-globe"></i></button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-bind="click: () => $parent.kccpRemoveMod($data.path)" title="remove"><i class="fa-regular fa-trash-can"></i></button>
             </div>
           </div>
           <!-- /ko -->
+        </div>
+        <div class="form-group mt-3">
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpAddMod">Add a patcher</button>
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpReloadMods">Reload mod data</button>
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpPrepatchAssets">Pre-patch ALL assets</button>
+        </div>
+        <h6>Advanced tools</h6>
+        <div class="form-group">
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpExtractSpritesheet">Extract spritesheet</button>
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpMakeOutlines">Make outlines</button>
+          <button type="button" class="btn btn-secondary" data-bind="click: kccpConvertFromPoi">Convert from poi</button>
         </div>
       </div>
       <!-- /ko -->

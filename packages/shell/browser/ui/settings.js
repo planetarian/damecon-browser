@@ -33,6 +33,8 @@ class Settings {
     modInfo: ko.observable(),
   }
 
+  kccpStatus = ko.observable({ busy: false, started: false })
+
   version = ''
 
   selectedConfigPage = ko.observable(0)
@@ -97,18 +99,44 @@ class Settings {
     }
   }
 
-  async addKccpMod() {
-    await sendMessage('kccp-add-mod')
+  async kccpImportBasicCacheDump() {
+    await sendMessage('kccp-import-cache', { builtIn: true })
+  }
+  async kccpImportCacheDump() {
+    await sendMessage('kccp-import-cache')
+  }
+  async kccpReloadCache() {
+    await sendMessage('kccp-reload-cache')
+  }
+  async kccpVerifyCache() {
+    await sendMessage('kccp-verify-cache')
+  }
+  async kccpPrepatchAssets() {
+    await sendMessage('kccp-prepatch')
+  }
+  async kccpExtractSpritesheet() {
+    await sendMessage('kccp-extract-spritesheet')
+  }
+  async kccpMakeOutlines() {
+    await sendMessage('kccp-make-outlines')
+  }
+  async kccpConvertFromPoi() {
+    await sendMessage('kccp-convert-poi')
   }
 
-  async removeKccpMod(path) {
+  async kccpAddMod() {
+    await sendMessage('kccp-add-mod')
+  }
+  async kccpReloadMods() {
+    await sendMessage('kccp-reload-mods')
+  }
+  async kccpRemoveMod(path) {
     const cfg = this.kccpConfig.current()
     const ind = cfg.mods.findIndex((m) => m.path == path)
     cfg.mods.splice(ind, 1)
     await kccpConfigStore.save(cfg)
   }
-
-  async moveKccpMod(path, dir) {
+  async kccpMoveMod(path, dir) {
     const cfg = this.kccpConfig.current()
     const ind = cfg.mods.findIndex((m) => m.path == path)
     const mod = cfg.mods.find((m) => m.path == path)
@@ -120,10 +148,6 @@ class Settings {
     cfg.mods.splice(ind, 1)
     cfg.mods.splice(ind + dir, 0, mod)
     await kccpConfigStore.save(cfg)
-  }
-
-  async reloadKccpMods() {
-    await sendMessage('kccp-reload-mods')
   }
 
   convertPropertiesToObservables(baseObj, opts) {
@@ -361,6 +385,10 @@ class Settings {
             case 'kccp-config-saved':
               await this.prepKccpConfig()
               break
+            case 'kccp-status':
+              const status = msg.data
+              this.kccpStatus(status)
+              break
             default:
               throw new Error(`Unknown message type ${msg.type || '(none)'}`)
           }
@@ -421,6 +449,7 @@ class Settings {
       async () => await sendMessage('get-damecon-version'),
       'get-damecon-version',
     )
+    this.kccpStatus(await sendMessage('kccp-get-status'))
 
     await this.prepKccpConfig()
 
