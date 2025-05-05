@@ -1,3 +1,19 @@
+ko.extenders.scrollFollow = function (target, selector) {
+  target.subscribe(function (newval) {
+    var el = document.querySelector(selector)
+
+    // the scroll bar is all the way down, so we know they want to follow the text
+    if (el.scrollTop == el.scrollHeight - el.clientHeight) {
+      // have to push our code outside of this thread since the text hasn't updated yet
+      setTimeout(function () {
+        el.scrollTop = el.scrollHeight - el.clientHeight
+      }, 0)
+    }
+  })
+
+  return target
+}
+
 class Settings {
   theme = ko.observable('andra')
   brightness = ko.observable('system')
@@ -33,7 +49,25 @@ class Settings {
     modInfo: ko.observable(),
   }
 
+  kccpModsOutOfDate = ko.pureComputed(() => {
+    return this.kccpConfig
+      .modInfo()
+      .filter((m) => m.latestVersion && m.latestVersion != m.info.version).length
+  })
+
   kccpStatus = ko.observable({ busy: false, started: false })
+  kccpTab = ko.observable(0)
+  // TODO: Don't reference UI stuff in VM
+  kccpLogRecent = ko.observableArray([]).extend({ scrollFollow: '#kccp-log-scroller' })
+
+  appLogRecent = ko.observableArray([]).extend({ scrollFollow: '#app-log-scroller' })
+
+  logTypes = ['log', 'error']
+  badgeClasses = {
+    log: 'info',
+    trace: 'warning',
+    error: 'danger',
+  }
 
   version = ''
 
@@ -103,7 +137,7 @@ class Settings {
     await sendMessage('kccp-import-cache', { builtIn: true })
   }
   async kccpImportCacheDump() {
-    await sendMessage('kccp-import-cache')
+    await sendMessage('kccp-import-cache', { builtIn: false })
   }
   async kccpReloadCache() {
     await sendMessage('kccp-reload-cache')
@@ -386,8 +420,22 @@ class Settings {
               await this.prepKccpConfig()
               break
             case 'kccp-status':
-              const status = msg.data
-              this.kccpStatus(status)
+              this.kccpStatus(msg.data)
+              break
+            case 'kccp-log-update':
+              if (!this.logTypes.includes(msg.data[2])) return
+              if (msg.data[1].startsWith('kccp-')) this.kccpLogRecent.push(msg.data)
+              else this.appLogRecent.push(msg.data)
+              break
+            case 'kccp-log-recent':
+              const kccpLog = msg.data
+                .reverse()
+                .filter((l) => l[1].startsWith('kccp-') && this.logTypes.includes(l[2]))
+              const appLog = msg.data
+                .reverse()
+                .filter((l) => !l[1].startsWith('kccp-') && this.logTypes.includes(l[2]))
+              this.kccpLogRecent(kccpLog)
+              this.appLogRecent(appLog)
               break
             default:
               throw new Error(`Unknown message type ${msg.type || '(none)'}`)
@@ -466,6 +514,8 @@ class Settings {
     this.kc3IsUpdating.subscribe((newValue) => this.setCanUpdateKc3())
     this.kc3IsUpdating(updateStatus.isUpdating)
     this.kc3UpdatingChannel(updateStatus.channel)
+
+    await sendMessage('kccp-log-get-recent')
   }
 }
 window.vm = new Settings()

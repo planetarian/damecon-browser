@@ -97,9 +97,12 @@
 }
 
 #settings-container .settings {
-  max-width: 500px;
+  max-width: 700px;
 }
 
+#settings-container .tab-content .settings-group {
+  border-radius: 0 0 6px 6px;
+}
 #settings-container .settings-group {
   margin-bottom: 10px;
   background-color: var(--content-fg-color);
@@ -115,11 +118,20 @@
   overflow-y: auto;
   max-height: 300px;
 }
+.log-scroller {
+  overflow-y: auto;
+  max-height: 500px;
+}
+.log-scroller li,
 .form-array-string-item {
   margin-bottom: 4px;
   display: flex;
   flex-direction: row;
   align-items: baseline;
+}
+.log-scroller li span:not(:first-child) {
+  overflow-wrap: anywhere;
+  user-select: text !important;
 }
 .form-array-string-item label {
   padding-right: 8px;

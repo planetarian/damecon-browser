@@ -61,6 +61,12 @@ class WebUI {
       if (msg?.type) await this.receiveFromMain(msg)
       else alert('webui.js received invalid webui-message from main:\n' + JSON.stringify(msg))
     })
+    ipc.on('update', (e, message) => {
+      chrome.runtime.sendMessage({ type: 'kccp-log-update', data: message })
+    })
+    ipc.on('recent', (e, message) => {
+      chrome.runtime.sendMessage({ type: 'kccp-log-recent', data: message })
+    })
     chrome.runtime.onMessage.addListener(
       function (msg, sender, sendresponse) {
         ;(async () => {
@@ -318,6 +324,7 @@ class WebUI {
       case 'kccp-extract-spritesheet':
       case 'kccp-make-outlines':
       case 'kccp-convert-poi':
+      case 'kccp-log-get-recent':
       case 'kc3-doupdate':
       case 'kc3-get-isupdating':
       case 'kc3-select-custom-location':

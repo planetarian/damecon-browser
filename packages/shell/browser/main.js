@@ -34,6 +34,11 @@ import kc3UpdateWorker from 'worker-loader!./workers/kc3update-worker.js'
 
 // KCCP
 const kccp = require('../../kccacheproxy/src/proxy/proxy.js')
+const kccpCacher = require('../../kccacheproxy/src/proxy/cacher.js')
+const kccpCacheHandler = require('../../kccacheproxy/src/proxy/cacheHandler.js')
+const kccpModderUtils = require('../../kccacheproxy/src/proxy/mod/modderUtils.js')
+const kccpPatcher = require('../../kccacheproxy/src/proxy/mod/patcher.js')
+
 let kccpProxy
 let kccpStatus = { started: false, busy: false, busyActions: 0 }
 
@@ -192,7 +197,7 @@ const getKccpConfig = async function () {
 
     if (modified) {
       await setKccpConfig(config)
-      kccp.ipc.send('reloadModCache')
+      await kccpPatcher.reloadModCache()
       await startStopKccp(kccpStatus.busyActions)
     }
 
@@ -217,7 +222,7 @@ const setKccpConfig = async function (kccpConfig) {
 }
 
 const initKccp = function () {
-  kccp.ipc.registerElectron(ipcMain, app)
+  kccp.logger.registerElectron(ipcMain, app)
   kccp.config.loadConfig(app)
 }
 
@@ -238,7 +243,7 @@ const startStopKccp = async function (expectedBusyActions = 0) {
       return
     }
 
-    console.trace(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy (trace)`)
+    console.log(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy`)
 
     if (kccpProxy) {
       kccpProxy.close()
@@ -282,7 +287,7 @@ function getKccpModPath(kccpConfig) {
 }
 function getKccpImgCachePath(kccpConfig) {
   let cachePath = kccpConfig.cacheLocation
-  if (config.cacheLocation == undefined || config.cacheLocation == 'default')
+  if (kccpConfig.cacheLocation == undefined || kccpConfig.cacheLocation == 'default')
     cachePath = path.join(app.getPath('userData'), 'ProxyData', 'cache')
   cachePath = path.join(cachePath, 'kcs2', 'img')
   return cachePath
@@ -791,8 +796,10 @@ class Browser {
           await win.applyProxy() // reapply to react to updated ip/port
           break
         case 'kccp-import-cache':
-          if (data.builtIn) {
-            kccp.ipc.send('importCache')
+          if (data?.builtIn) {
+            // TODO: fix
+            const minCachePath = path.join(__dirname, '../../minimum-cache.zip')
+            await kccpCacheHandler.mergeCache(minCachePath)
           } else {
             const response = await dialog.showOpenDialog({
               title: 'Select cache dump .zip file',
@@ -805,7 +812,7 @@ class Browser {
               properties: ['openFile'],
             })
             if (!response.canceled) {
-              kccp.ipc.send('importCache', response.filePaths[0])
+              await kccpCacheHandler.mergeCache(response.filePaths[0])
             }
           }
           break
@@ -821,11 +828,11 @@ class Browser {
             cancelId: 1,
           })
           if (verifyResponse === 0) return
-          kccp.ipc.send('verifyCache', verifyResponse === 1)
+          await kccpCacheHandler.verifyCache(verifyResponse === 1)
           break
         case 'kccp-extract-spritesheet':
           kccpConfig = await getKccpConfig()
-          cachePath = await getKccpImgCachePath(kccpConfig.config)
+          cachePath = getKccpImgCachePath(kccpConfig.config)
           source = await dialog.showOpenDialog({
             title: 'Select a spritesheet',
             defaultPath: cachePath,
@@ -845,12 +852,11 @@ class Browser {
             properties: ['openDirectory'],
           })
           if (target.canceled) return
-
-          kccp.ipc.send('extractSpritesheet', source.filePaths[0], target.filePaths[0])
+          await kccpModderUtils.extractSplit(source.filePaths[0], target.filePaths[0])
           break
         case 'kccp-make-outlines':
           kccpConfig = await getKccpConfig()
-          cachePath = await getKccpImgCachePath(kccpConfig.config)
+          cachePath = getKccpImgCachePath(kccpConfig.config)
           source = await dialog.showOpenDialog({
             title: 'Select a spritesheet',
             defaultPath: cachePath,
@@ -866,7 +872,7 @@ class Browser {
 
           target = await dialog.showSaveDialog({
             title: 'Select a location to save outlines to',
-            defaultPath: await getModPath(kccpConfig.config),
+            defaultPath: getKccpModPath(kccpConfig.config),
             filters: [
               {
                 name: 'Images',
@@ -876,7 +882,7 @@ class Browser {
           })
           if (target.canceled) return
 
-          kccp.ipc.send('outlines', source.filePaths[0], target.filePath)
+          await kccpModderUtils.outlines(source.filePaths[0], target.filePath)
           break
         case 'kccp-convert-poi':
           kccpConfig = await getKccpConfig()
@@ -894,7 +900,7 @@ class Browser {
           })
           if (target.canceled) return
 
-          kccp.ipc.send('importExternalMod', source.filePaths[0], target.filePaths[0])
+          await kccpModderUtils.importExternalMod(source.filePaths[0], target.filePaths[0])
           break
         case 'kccp-add-mod':
           kccpConfig = await getKccpConfig()
@@ -919,14 +925,17 @@ class Browser {
           //await startStopKccp() // will automatically start when fetching the config and checking for updates
           await win.applyProxy()
           break
+        case 'kccp-log-get-recent':
+          kccp.logger.sendRecent()
+          break
         case 'kccp-reload-mods':
-          kccp.ipc.send('reloadModCache')
+          await kccpPatcher.reloadModCache()
           break
         case 'kccp-reload-cache':
-          kccp.ipc.send('reloadCache')
+          kccpCacher.loadCached()
           break
         case 'kccp-prepatch':
-          kccp.ipc.send('prepatch')
+          await kccpPatcher.prepatch()
           break
       }
       return result
@@ -1053,7 +1062,7 @@ class Browser {
     })
     this.windows.push(win)
     if (this.windows.length == 1) {
-      kccp.ipc.setMainWindow(win.window)
+      kccp.logger.setMainWindow(win.window)
       initKccp()
     }
 
