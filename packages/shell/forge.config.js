@@ -60,6 +60,14 @@ module.exports = {
             await fs.cp(path.join(src, dir), path.join(dst, dir), { recursive: true })
           }
         }
+        const minCacheSrc = path.join(__dirname, '../../packages/kccacheproxy/minimum-cache.zip')
+        const minCacheDest = path.join(options.outputPaths[0], 'resources/minimum-cache.zip')
+        const fi = await fs.stat(minCacheSrc)
+        if (!fi.isFile())
+          throw new Error(
+            'Minimum cache zip not found. run in packages/kccacheproxy/build.bat to generate it.',
+          )
+        await fs.copyFile(minCacheSrc, minCacheDest)
       } catch (error) {
         console.log('Error copying extensions', error)
       }

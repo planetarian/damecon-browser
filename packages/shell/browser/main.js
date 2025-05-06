@@ -796,24 +796,29 @@ class Browser {
           await win.applyProxy() // reapply to react to updated ip/port
           break
         case 'kccp-import-cache':
-          if (data?.builtIn) {
-            // TODO: fix
-            const minCachePath = path.join(__dirname, '../../minimum-cache.zip')
-            await kccpCacheHandler.mergeCache(minCachePath)
-          } else {
-            const response = await dialog.showOpenDialog({
-              title: 'Select cache dump .zip file',
-              filters: [
-                {
-                  name: '.zip files',
-                  extensions: ['zip'],
-                },
-              ],
-              properties: ['openFile'],
-            })
-            if (!response.canceled) {
-              await kccpCacheHandler.mergeCache(response.filePaths[0])
+          let location = 'unknown'
+          try {
+            if (data?.builtIn) {
+              location = path.join(ROOT_DIR, 'resources/minimum-cache.zip')
+              await kccpCacheHandler.mergeCache(location)
+            } else {
+              const response = await dialog.showOpenDialog({
+                title: 'Select cache dump .zip file',
+                filters: [
+                  {
+                    name: '.zip files',
+                    extensions: ['zip'],
+                  },
+                ],
+                properties: ['openFile'],
+              })
+              if (!response.canceled) {
+                location = response.filePaths[0]
+                await kccpCacheHandler.mergeCache(location)
+              }
             }
+          } catch (error) {
+            console.error("Couldn't load cache dump from location", location)
           }
           break
         case 'kccp-verify-cache':
