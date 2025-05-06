@@ -133,19 +133,31 @@ class Settings {
     }
   }
 
+  async clearSessionCache() {
+    await sendMessage('clear-cache')
+  }
+
+  kccpOpenLog() {
+    this.kccpTab(0)
+  }
   async kccpImportBasicCacheDump() {
+    this.kccpOpenLog()
     await sendMessage('kccp-import-cache', { builtIn: true })
   }
   async kccpImportCacheDump() {
+    this.kccpOpenLog()
     await sendMessage('kccp-import-cache', { builtIn: false })
   }
   async kccpReloadCache() {
+    this.kccpOpenLog()
     await sendMessage('kccp-reload-cache')
   }
   async kccpVerifyCache() {
+    this.kccpOpenLog()
     await sendMessage('kccp-verify-cache')
   }
   async kccpPrepatchAssets() {
+    this.kccpOpenLog()
     await sendMessage('kccp-prepatch')
   }
   async kccpExtractSpritesheet() {

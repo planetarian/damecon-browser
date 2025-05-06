@@ -761,6 +761,10 @@ class Browser {
             result = isMatch(data.url, sites)
           }
           break
+        case 'clear-cache':
+          await win.window.webContents.session.clearCache()
+          console.log('Cache cleared.')
+          break
         case 'kc3-doupdate':
           await this.updateKc3(configStore.get('kc3kai.update.channel'))
           break

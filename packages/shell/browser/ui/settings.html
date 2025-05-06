@@ -124,26 +124,29 @@
           </div>
         </div>
         <div class="form-row-gap">
-          <div class="form-group">
+          <div>
             <label>Show in tab bar when hidden:</label>
           </div>
-          <div class="form-group">
+          <div>
             <input type="checkbox" id="always-show-extensions" data-bind="checked: config.window.view.alwaysShowExtensions"></input>
             <label for="always-show-extensions" title="extensions"><i class="fa-solid fa-puzzle-piece"></i></label>
           </div>
-          <div class="form-group">
+          <div>
             <input type="checkbox" id="always-show-goback" data-bind="checked: config.window.view.alwaysShowBack"></input>
             <label for="always-show-goback" title="go back"><i class="fa-solid fa-arrow-left"></i></label>
           </div>
-          <div class="form-group">
+          <div>
             <input type="checkbox" id="always-show-goforward" data-bind="checked: config.window.view.alwaysShowForward"></input>
             <label for="always-show-goforward" title="go forward"><i class="fa-solid fa-arrow-right"></i></label>
           </div>
-          <div class="form-group">
+          <div>
             <input type="checkbox" id="always-show-reload" data-bind="checked: config.window.view.alwaysShowReload"></input>
             <label for="always-show-reload" title="refresh"><i class="fa-solid fa-rotate-right"></i></label>
           </div>
         </div>
+      </div>
+      <div class="form-group">
+        <button type="button" class="btn btn-secondary" data-bind="click: clearSessionCache">Clear browser cache</button>
       </div>
       <h5>Application Log</h5>
       <div class="settings-group">

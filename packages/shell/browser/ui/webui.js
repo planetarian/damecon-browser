@@ -312,6 +312,7 @@ class WebUI {
       case 'get-damecon-version':
       case 'get-config':
       case 'get-config-item':
+      case 'clear-cache':
       case 'kccp-get-status':
       case 'kccp-get-config':
       case 'kccp-save-config':

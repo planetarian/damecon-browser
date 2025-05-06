@@ -100,7 +100,7 @@ New Tab launch page:
 - [x] Support both release and in-development versions of KC3
 - [x] Configurable KC3 update schedule (daily/weekly/always/never)
 - [x] Auto-open KC3 start page (with developer tools) and strategy room
-- [x] KCCacheProxy client support
+- [x] KCCacheProxy full integration & proxy client support
 - [x] Color and light/dark theme support
 - [x] Manifest V3 extensions support
 - [x] Chrome Webstore extensions support
