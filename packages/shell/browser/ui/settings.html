@@ -90,7 +90,20 @@
 
     <script type="text/html" id="settings-content-0">
       <h3>Damecon Settings</h3>
-      <h5>Window</h5>
+      
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${appTab() == 0 ? ' active' : ''}` }, click: () => appTab(0)">Window</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${appTab() == 1 ? ' active' : ''}` }, click: () => appTab(1)">Application</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${appTab() == 2 ? ' active' : ''}` }, click: () => appTab(2)">Application Log</a>
+        </li>
+      </ul>
+      <div class="form-group"></div>
+      <!-- ko if: appTab() == 0 -->
       <div class="settings-group">
         <div class="form-row">
           <label for="windowstyletheme" class="col-sm-3">Theme</label>
@@ -109,7 +122,7 @@
             <div class="form-array-string-item input-group">
               <input type="text" class="form-control" data-bind="value: $rawData, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
               <div class="input-group-append">
-                <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)"><i class="fa-sharp fa-solid fa-xmark"></i></button>
+                <button type="button" class="btn btn-secondary" data-bind="click: () => $parent.removeHideAddressBarSite($data)" title="remove this entry"><i class="fa-sharp fa-solid fa-xmark"></i></button>
               </div>
             </div>
             <!-- /ko -->
@@ -119,7 +132,7 @@
             <div class="input-group">
               <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
               <div class="input-group-append">
-                <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite"><i class="fa-sharp fa-solid fa-plus"></i></button>
+                <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite" title="add a site to hide addressbar for"><i class="fa-sharp fa-solid fa-plus"></i></button>
               </div>
             </div>
           </div>
@@ -146,7 +159,8 @@
           </div>
         </div>
       </div>
-      <h5>Application</h5>
+      <!-- /ko -->
+      <!-- ko if: appTab() == 1 -->
       <div class="settings-group">
         <div class="form-group form-check">
           <input class="form-check-input" id="appupdatesauto" type="checkbox" data-bind="checked: config.app.update.auto"></input>
@@ -192,7 +206,8 @@
       <div class="form-group">
         <button type="button" class="btn btn-secondary" data-bind="click: clearSessionCache">Clear browser cache</button>
       </div>
-      <h5>Application Log</h5>
+      <!-- /ko -->
+      <!-- ko if: appTab() == 2 -->
       <div class="settings-group">
         <div id="app-log-scroller" class="log-scroller">
           <ul>
@@ -209,13 +224,14 @@
           </ul>
         </div>
       </div>
+      <!-- /ko -->
     </script>
 
     <script type="text/html" id="settings-content-1">
       <h3>KC3Kai Settings</h3>
       <div class="settings-group">
         <div class="form-row">
-          <label for="kc3gamepage" class="col-sm-4">Game startup page</label>
+          <label for="kc3gamepage" class="col-sm-3">Game startup page</label>
           <select id="kc3gamepage" class="col form-control" data-bind="options: configSchema.kc3kai.startup.gamePage.options, value: config.kc3kai.startup.gamePage"></select>
         </div>
         <div class="form-check">
@@ -229,12 +245,12 @@
       </div>
       <div class="settings-group">
         <div class="form-row">
-          <label for="kc3updatechannel" class="col-sm-4">Update channel</label>
+          <label for="kc3updatechannel" class="col-sm-3">Update channel</label>
           <select id="kc3updatechannel" class="col form-control" data-bind="options: configSchema.kc3kai.update.channel.options, value: config.kc3kai.update.channel, enable: canSetKc3Channel"></select>
         </div>
         <!-- ko if: !config.kc3kai.update.channel()?.startsWith('custom') -->
         <div class="form-row">
-          <label for="kc3updateschedule" class="col-sm-4">Update schedule</label>
+          <label for="kc3updateschedule" class="col-sm-3">Update schedule</label>
           <select id="kc3updateschedule" class="col form-control" data-bind="options: configSchema.kc3kai.update.schedule.options, value: config.kc3kai.update.schedule"></select>
         </div>
         <div class="form-check">
@@ -244,7 +260,7 @@
         <!-- /ko -->
         <!-- ko if: config.kc3kai.update.channel() === 'custom1' -->
         <div class="form-row">
-          <label for="kc3custom1location" class="col-sm-4">Location</label>
+          <label for="kc3custom1location" class="col-sm-3">Location</label>
           <div class="input-group col">
             <input type="text" id="kc3custom1location" class="form-control sensitive" data-bind="value: config.kc3kai.custom1Location"/>
             <div class="input-group-append">
@@ -266,7 +282,6 @@
         <!-- /ko -->
       </div>
       <div class="form-group">
-        <p>Note: reloading will automatically close any currently-open KC3 tabs.</p>
         <!-- ko if: !config.kc3kai.update.channel()?.startsWith('custom') -->
         <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Check for updates & reload</button>
         <!-- /ko -->
@@ -274,6 +289,7 @@
         <button class="btn btn-secondary" type="button" data-bind="click: kc3CheckForUpdates, enable: canUpdateKc3">Reload</button>
         <!-- /ko -->
       </div>
+      <p>Note: reloading will automatically close any currently-open KC3 tabs.</p>
     </script>
 
     <script type="text/html" id="settings-content-2">
@@ -305,14 +321,11 @@
       <h5>KCCacheProxy</h5>
       <ul class="nav nav-tabs">
         <li class="nav-item">
-          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${kccpTab() == 0 ? ' active' : ''}` }, click: () => kccpTab(0)">Proxy Log</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${kccpTab() == 1 ? ' active' : ''}` }, click: () => kccpTab(1)">Configuration</a>
+          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${kccpTab() == 0 ? ' active' : ''}` }, click: () => kccpTab(0)">Configuration</a>
         </li>
         <!-- ko if: kccpConfig.enableModder -->
         <li class="nav-item">
-          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${kccpTab() == 2 ? ' active' : ''}` }, click: () => kccpTab(2)">
+          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${kccpTab() == 1 ? ' active' : ''}` }, click: () => kccpTab(1)">
             <span>Asset Mods</span>
             <!-- ko if: kccpModsOutOfDate() > 0 -->
             <span class="badge badge-danger" data-bind="text: kccpModsOutOfDate"></span>
@@ -320,27 +333,12 @@
           </a>
         </li>
         <!-- /ko -->
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${kccpTab() == 2 ? ' active' : ''}` }, click: () => kccpTab(2)">Proxy Log</a>
+        </li>
       </ul>
       <div class="tab-content" data-bind="enable: !kccpStatus().busy">
         <!-- ko if: kccpTab() == 0 -->
-        <div class="settings-group">
-          <div id="kccp-log-scroller" class="log-scroller">
-            <ul>
-              <!-- ko foreach: kccpLogRecent -->
-              <li>
-                <small>
-                  <span data-bind="text: $data[2], attr: { class: `badge badge-${$parent.badgeClasses[$data[2]]}` }"></span>
-                  <!-- ko foreach: $data.slice(3) -->
-                  <span data-bind="text: $data"></span>
-                  <!-- /ko -->
-                </small>
-              </li>
-              <!-- /ko -->
-            </ul>
-          </div>
-        </div>
-        <!-- /ko -->
-        <!-- ko if: kccpTab() == 1 -->
         <div class="settings-group">
           <div class="form-row">
             <div class="col-sm-3"><label for="proxyclienthost">Hostname/IP</label></div>
@@ -369,7 +367,7 @@
           <!-- /ko -->
           <div class="form-check">
             <input class="form-check-input" id="verifycache" type="checkbox" data-bind="checked: kccpConfig.verifyCache"></input>
-            <label class="form-check-label" for="verifycache">Automatically verify cache integrity</label>
+            <label class="form-check-label" for="verifycache">Automatically verify cache integrity (takes some time)</label>
           </div>
           <div class="form-check">
             <input class="form-check-input" id="disablebrowserCache" type="checkbox" data-bind="checked: kccpConfig.disableBrowserCache"></input>
@@ -399,7 +397,7 @@
           </div>
         </div>
         <!-- /ko -->
-        <!-- ko if: kccpConfig.enableModder() && kccpTab() == 2 -->
+        <!-- ko if: kccpConfig.enableModder() && kccpTab() == 1 -->
         <div class="settings-group">
           <div class="form-items-scroller">
             <!-- ko foreach: kccpConfig.modInfo -->
@@ -440,6 +438,24 @@
             <button type="button" class="btn btn-secondary" data-bind="click: kccpExtractSpritesheet">Extract spritesheet</button>
             <button type="button" class="btn btn-secondary" data-bind="click: kccpMakeOutlines">Make outlines</button>
             <button type="button" class="btn btn-secondary" data-bind="click: kccpConvertFromPoi">Convert from poi</button>
+          </div>
+        </div>
+        <!-- /ko -->
+        <!-- ko if: kccpTab() == 2 -->
+        <div class="settings-group">
+          <div id="kccp-log-scroller" class="log-scroller">
+            <ul>
+              <!-- ko foreach: kccpLogRecent -->
+              <li>
+                <small>
+                  <span data-bind="text: $data[2], attr: { class: `badge badge-${$parent.badgeClasses[$data[2]]}` }"></span>
+                  <!-- ko foreach: $data.slice(3) -->
+                  <span data-bind="text: $data"></span>
+                  <!-- /ko -->
+                </small>
+              </li>
+              <!-- /ko -->
+            </ul>
           </div>
         </div>
         <!-- /ko -->

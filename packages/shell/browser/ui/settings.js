@@ -57,6 +57,7 @@ class Settings {
 
   kccpStatus = ko.observable({ busy: false, started: false })
   kccpTab = ko.observable(0)
+  appTab = ko.observable(0)
   // TODO: Don't reference UI stuff in VM
   kccpLogRecent = ko.observableArray([]).extend({ scrollFollow: '#kccp-log-scroller' })
 
