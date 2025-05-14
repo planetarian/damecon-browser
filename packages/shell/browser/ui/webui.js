@@ -310,6 +310,7 @@ class WebUI {
   async receiveFromRenderer(msg) {
     switch (msg.type) {
       case 'get-damecon-version':
+      case 'get-damecon-info':
       case 'get-config':
       case 'get-config-item':
       case 'clear-cache':
@@ -329,6 +330,7 @@ class WebUI {
       case 'kc3-doupdate':
       case 'kc3-get-isupdating':
       case 'kc3-select-custom-location':
+      case 'select-custom-data-location':
         return this.sendToMain(msg.type, msg.data)
       case 'set-config-item':
         const result = await this.sendToMain(msg.type, msg.data)

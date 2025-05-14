@@ -3,6 +3,14 @@ const configSchema = {
     update: {
       auto: { type: 'bool', default: true },
     },
+    data: {
+      location: {
+        type: 'option',
+        options: ['home', 'appdata', 'appdir', 'custom'],
+        default: 'appdata',
+      },
+      customPath: { type: 'string', default: 'default' },
+    },
   },
   window: {
     state: {

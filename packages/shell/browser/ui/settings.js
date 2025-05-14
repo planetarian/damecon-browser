@@ -344,7 +344,7 @@ class Settings {
     this.processes.push(p)
   }
 
-  async getKc3Location() {
+  async getCustomKc3Path() {
     const channel = this.config.kc3kai.update.channel()
     if (!channel.startsWith('custom')) {
       console.error('Custom kc3 channel not selected.')
@@ -358,6 +358,20 @@ class Settings {
     if (channel === 'custom1') this.config.kc3kai.update.custom1Location(path)
     else if (channel === 'custom2') this.config.kc3kai.update.custom2Location(path)
     else console.error('Unknown custom kc3 channel', channel)
+  }
+
+  async getCustomDataPath() {
+    const loc = this.config.app.data.location()
+    if (loc != 'custom') {
+      console.error('Custom data location not selected.')
+      return
+    }
+    const result = await sendMessage('select-custom-data-location')
+    if (result.canceled || !result.filePaths.length) return
+    const path = result.filePaths[0]
+    console.log('Selected data path', path)
+
+    this.config.app.data.customPath(path)
   }
 
   friendlySize(bytes, decimals = 2) {
@@ -505,11 +519,13 @@ class Settings {
     this.init()
   }
   async init() {
-    this.version = await this.tryInvoke(
-      async () => await sendMessage('get-damecon-version'),
-      'get-damecon-version',
+    const appInfo = await this.tryInvoke(
+      async () => await sendMessage('get-damecon-info'),
+      'get-damecon-info',
     )
-    this.kccpStatus(await sendMessage('kccp-get-status'))
+    this.paths = appInfo.paths
+    this.version = appInfo.version
+    this.kccpStatus(appInfo.kccpStatus)
 
     await this.prepKccpConfig()
 

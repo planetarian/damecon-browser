@@ -55,7 +55,22 @@ import {
   getKccpImgCachePath,
 } from './kccp-integration.js'
 
-const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
+// folder the app was launched from
+// for installed versions, this is the squirrel folder, not the folder containing resource.
+let appDir = app.getAppPath()
+const appDirCheck = /(?<base>.+)[\\/]app-\d+\.\d+\.\d+$/.exec(appDir)
+if (!!appDirCheck) appDir = appDirCheck.groups.base
+
+// ~\AppData\Roaming in windows, or ~/.config in linux.
+const appDataDir = app.getPath('userData')
+
+// store config.json in the app folder when running packaged.
+const cfgOpts = {}
+if (app.isPackaged) cfgOpts.configPath = path.join(appDir, 'config.json')
+else cfgOpts.globalConfigPath = true
+
+const configStore = new ConfigStore('damecon-browser', {}, cfgOpts)
+
 const cfg = configStore.all
 populateConfigDefaults(cfg)
 
@@ -89,12 +104,26 @@ app.on('second-instance', () => {
 app.userAgentFallback = app.userAgentFallback.replace(' Electron/', ' Elec/')
 console.log('User-Agent:', app.userAgentFallback)
 
+// determine where the userdata/extensions folders should be stored
+const homeDataLocation = path.join(app.getPath('home'), app.name)
+const dataLocation = cfg.app.data.location
+let dataPath = appDir
+switch (dataLocation) {
+  case 'home':
+    dataPath = homeDataLocation
+    break
+  case 'appdata':
+    dataPath = appDataDir
+    break
+  case 'custom':
+    if (fsSync.existsSync(cfg.app.data.customPath)) dataPath = cfg.app.data.customPath
+}
+app.setPath('userData', path.join(dataPath, 'userdata'))
+
 if (process.execPath.match(/(damecon(-browser)?|chrome)/)) {
   const currentPath = path.dirname(process.execPath)
   console.log('process.execPath', process.execPath)
   console.log('currentPath', currentPath)
-  let p = path.join(currentPath, 'userdata')
-  app.setPath('userData', p)
 } else {
   // app.commandLine.appendSwitch('proxy-server', '192.168.0.123:1235')
 }
@@ -103,6 +132,9 @@ if (process.execPath.match(/(damecon(-browser)?|chrome)/)) {
 const SHELL_ROOT_DIR = path.join(__dirname, '../../')
 const ROOT_DIR = path.join(__dirname, '../../../../')
 const PATHS = {
+  APPDATA: appDataDir,
+  APPDIR: appDir,
+  HOME: app.getPath('home'),
   WEBUI: app.isPackaged
     ? path.resolve(process.resourcesPath, 'ui')
     : path.resolve(SHELL_ROOT_DIR, 'browser', 'ui'),
@@ -110,8 +142,8 @@ const PATHS = {
     ? path.resolve(process.resourcesPath, 'workers')
     : path.resolve(SHELL_ROOT_DIR, 'browser', 'workers'),
   PRELOAD: path.join(__dirname, '../renderer/browser/preload.js'),
-  LOCAL_EXTENSIONS: path.join(ROOT_DIR, 'extensions'),
-  KC3_EXTENSIONS: path.join(ROOT_DIR, 'extensions'),
+  LOCAL_EXTENSIONS: path.join(dataPath, 'extensions'),
+  KC3_EXTENSIONS: path.join(dataPath, 'extensions'),
   //KC3_EXTENSIONS: path.join(ROOT_DIR, 'ext_kc3kai'),
 }
 
@@ -571,6 +603,17 @@ class Browser {
       let result
       let kccpConfig, cachePath, source, target // reusables
       switch (type) {
+        case 'get-damecon-info':
+          result = {
+            version: `${app.getName()} v${app.getVersion()}`,
+            paths: {
+              home: homeDataLocation,
+              app: appDir,
+              appData: appDataDir,
+            },
+            kccpStatus: getKccpStatus(),
+          }
+          break
         case 'get-damecon-version':
           result = `${app.getName()} v${app.getVersion()}`
           break
@@ -618,6 +661,7 @@ class Browser {
           result = { isUpdating: this.kc3IsUpdating, channel: this.kc3UpdatingChannel }
           break
         case 'kc3-select-custom-location':
+        case 'select-custom-data-location':
           const { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openDirectory'],
           })

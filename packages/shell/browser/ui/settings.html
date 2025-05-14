@@ -90,6 +90,7 @@
 
     <script type="text/html" id="settings-content-0">
       <h3>Damecon Settings</h3>
+      <h5>Window</h5>
       <div class="settings-group">
         <div class="form-row">
           <label for="windowstyletheme" class="col-sm-3">Theme</label>
@@ -147,13 +148,49 @@
       </div>
       <h5>Application</h5>
       <div class="settings-group">
-        <div class="form-check">
+        <div class="form-group form-check">
           <input class="form-check-input" id="appupdatesauto" type="checkbox" data-bind="checked: config.app.update.auto"></input>
           <label class="form-check-label" for="appupdatesauto">Download app updates automatically</label>
         </div>
-        <div class="form-group">
-          <button type="button" class="btn btn-secondary" data-bind="click: clearSessionCache">Clear browser cache</button>
+        <div class="form-row">
+          <label for="appdatalocation" class="col-sm-3">Data location</label>
+          <select id="appdatalocation" class="col form-control" data-bind="options: configSchema.app.data.location.options, value: config.app.data.location"></select>
         </div>
+        <!-- ko if: config.app.data.location() != 'custom' -->
+        <div class="form-group">
+          <div class="form-group"></div>
+          <span>Path:</span>
+          <span class="sensitive">
+            <!-- ko if: config.app.data.location() == 'home' -->
+            <span class="selectable" data-bind="text: paths.home"></span>
+            <!-- /ko -->
+            <!-- ko if: config.app.data.location() == 'appdata' -->
+            <span class="selectable" data-bind="text: paths.appData"></span>
+            <!-- /ko -->
+            <!-- ko if: config.app.data.location() == 'appdir' -->
+            <span class="selectable" data-bind="text: paths.app"></span>
+            <!-- /ko -->
+          </span>
+        </div>
+        <!-- /ko -->
+        <!-- ko if: config.app.data.location() == 'custom' -->
+        <div class="form-row">
+          <label for="appdatacustompath" class="col-sm-4">Custom location</label>
+          <div class="input-group col">
+            <input type="text" id="appdatacustompath" class="form-control sensitive" data-bind="value: config.app.data.customPath"/>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-secondary" data-bind="click: getCustomDataPath">Browse</button>
+            </div>
+          </div>
+        </div>
+        <!-- /ko -->
+        <div class="form-group"></div>
+        <div class="form-group">
+          <span>Note: You will need to close and restart Damecon for the data location setting to take effect.</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <button type="button" class="btn btn-secondary" data-bind="click: clearSessionCache">Clear browser cache</button>
       </div>
       <h5>Application Log</h5>
       <div class="settings-group">
@@ -209,9 +246,9 @@
         <div class="form-row">
           <label for="kc3custom1location" class="col-sm-4">Location</label>
           <div class="input-group col">
-            <input type="text" id="kc3custom1location" class="form-control" data-bind="value: config.kc3kai.custom1Location"/>
+            <input type="text" id="kc3custom1location" class="form-control sensitive" data-bind="value: config.kc3kai.custom1Location"/>
             <div class="input-group-append">
-              <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+              <button type="button" class="btn btn-secondary" data-bind="click: getCustomKc3Path">Browse</button>
             </div>
           </div>
         </div>
@@ -220,9 +257,9 @@
         <div class="form-row">
           <label for="kc3custom2location" class="col-sm-4">Location</label>
           <div class="input-group col">
-            <input type="text" id="kc3custom2location" class="form-control" data-bind="value: config.kc3kai.custom2Location"/>
+            <input type="text" id="kc3custom2location" class="form-control sensitive" data-bind="value: config.kc3kai.custom2Location"/>
             <div class="input-group-append">
-              <button type="button" class="btn btn-secondary" data-bind="click: getKc3Location">Browse</button>
+              <button type="button" class="btn btn-secondary" data-bind="click: getCustomKc3Path">Browse</button>
             </div>
           </div>
         </div>
