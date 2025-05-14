@@ -9,7 +9,7 @@ const configSchema = {
         options: ['home', 'appdata', 'appdir', 'custom'],
         default: 'appdata',
       },
-      customPath: { type: 'string', default: 'default' },
+      customPath: { type: 'string' },
     },
   },
   window: {
