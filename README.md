@@ -8,7 +8,17 @@ A minimal, tabbed web browser for playing Kantai Collection, with integrated KC3
 
 ### From a Release build:
 
-Download the `damecon-browser-*.zip`, extract it to an empty folder, and run `damecon-browser.exe`.
+From the Releases page, download one of the following:
+
+Installer: `damecon-browser-*.Setup.exe`
+
+- Simply download and run it to install.
+- This provides automatic updates for Damecon, and the simplest overall process.
+
+Alternatively, use the zip file: `damecon-browser-*.zip`
+
+- Download and extract its contents to an empty folder, and run `damecon-browser.exe` from the extracted files.
+- This lets you use specific versions if desired, but lacks automatic updates.
 
 ### From source code, using `yarn`:
 
@@ -95,6 +105,7 @@ New Tab launch page:
 
 ### 🚀 Current
 
+- [x] Installer + Application auto-update
 - [x] KC3Kai integration
 - [x] Automatic updates for KC3
 - [x] Support both release and in-development versions of KC3
@@ -117,7 +128,6 @@ New Tab launch page:
 ### 🤞 Eventually
 
 - [ ] Extension management (enable/disable/uninstall)
-- [ ] Application auto-update
 - [ ] .CRX extension loader
 - [ ] Support for more common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
 - [ ] Respect extension manifest permissions
