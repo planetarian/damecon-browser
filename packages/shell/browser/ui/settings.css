@@ -279,3 +279,41 @@ h3 button {
   background-color: var(--chrome-bg-color);
   width: 100%;
 }
+
+span.sensitive {
+  position: relative;
+}
+span.sensitive > * {
+  display: inline-block;
+  min-width: 300px;
+  filter: blur(5px);
+  transition: filter 0.5s ease;
+}
+span.sensitive::after {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  filter: none;
+  content: 'Hold mouse button to show';
+}
+span.sensitive:active > *,
+span.sensitive:focus > * {
+  filter: none;
+}
+span.sensitive:active::after,
+span.sensitive:focus::after {
+  content: '';
+}
+
+input.sensitive {
+  filter: blur(5px);
+  transition: filter 0.5s ease;
+}
+input.sensitive:active,
+input.sensitive:focus {
+  filter: none;
+}
+
+.selectable {
+  user-select: all;
+}
