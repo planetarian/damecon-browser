@@ -145,8 +145,15 @@
           </div>
         </div>
       </div>
-      <div class="form-group">
-        <button type="button" class="btn btn-secondary" data-bind="click: clearSessionCache">Clear browser cache</button>
+      <h5>Application</h5>
+      <div class="settings-group">
+        <div class="form-check">
+          <input class="form-check-input" id="appupdatesauto" type="checkbox" data-bind="checked: config.app.update.auto"></input>
+          <label class="form-check-label" for="appupdatesauto">Download app updates automatically</label>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-secondary" data-bind="click: clearSessionCache">Clear browser cache</button>
+        </div>
       </div>
       <h5>Application Log</h5>
       <div class="settings-group">

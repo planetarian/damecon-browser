@@ -1,5 +1,5 @@
 import path from 'path'
-import fsSync from 'fs'
+import fsSync, { utimesSync } from 'fs'
 import {
   app,
   session,
@@ -9,7 +9,14 @@ import {
   ipcMain,
   nativeTheme,
   dialog,
+  autoUpdater,
 } from 'electron'
+
+if (require('electron-squirrel-startup')) app.quit()
+app.setAppUserModelId('net.tsunkit.damecon')
+
+import { updateElectronApp, UpdateSourceType } from 'update-electron-app'
+
 // damecon config
 import ConfigStore from 'configstore'
 import { configSchema, populateConfigDefaults } from './ui/config-utils.js'
@@ -38,9 +45,15 @@ const kccpCacher = require('../../kccacheproxy/src/proxy/cacher.js')
 const kccpCacheHandler = require('../../kccacheproxy/src/proxy/cacheHandler.js')
 const kccpModderUtils = require('../../kccacheproxy/src/proxy/mod/modderUtils.js')
 const kccpPatcher = require('../../kccacheproxy/src/proxy/mod/patcher.js')
-
-let kccpProxy
-let kccpStatus = { started: false, busy: false, busyActions: 0 }
+import {
+  getKccpStatus,
+  getKccpConfig,
+  setKccpConfig,
+  initKccp,
+  startStopKccp,
+  getKccpModPath,
+  getKccpImgCachePath,
+} from './kccp-integration.js'
 
 const configStore = new ConfigStore('damecon-browser', {}, { globalConfigPath: true })
 const cfg = configStore.all
@@ -59,6 +72,22 @@ app.commandLine.appendSwitch('force-gpu-rasterization')
 app.commandLine.appendSwitch('enable-native-gpu-memory-buffers')
 app.commandLine.appendSwitch('enable-gpu-memory-buffer-compositor-resources')
 app.commandLine.appendSwitch('enable-experimental-web-platform-features')
+
+// only allow one instance to run for now
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+  console.log("!! shouldn't see me !!")
+}
+app.on('second-instance', () => {
+  const mainWindow = this.windows[0].window
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+})
+
+//app.userAgentFallback = app.userAgentFallback.replace(' Electron/' + process.versions.electron, '');
+// Shorten 'Electron' so we can bypass Google's "Unsecure" browser block without losing version information
+app.userAgentFallback = app.userAgentFallback.replace(' Electron/', ' Elec/')
+console.log('User-Agent:', app.userAgentFallback)
 
 if (process.execPath.match(/(damecon(-browser)?|chrome)/)) {
   const currentPath = path.dirname(process.execPath)
@@ -109,188 +138,16 @@ const manifestExists = async (dirPath) => {
   }
 }
 
-const kccpSendStatusUpdate = function () {
-  kccpStatus.busy = kccpStatus.busyActions > 0
-  const windows = BrowserWindow.getAllWindows()
-  windows[0].webContents.send('webui-message', { type: 'kccp-status', data: kccpStatus })
-}
-
-const getKccpConfig = async function () {
-  while (kccpStatus.busy) {
-    console.log('KCCP currently busy, waiting...')
-    await setTimeout(1000)
-  }
-
-  kccpStatus.busyActions++
-  kccpSendStatusUpdate()
-  try {
-    const config = kccp.config.getConfig()
-    const modInfo = []
-    let modified = false
-
-    for (const mod of config.mods) {
-      const path = mod.path
-      const exists = fsSync.existsSync(path)
-      const info = {}
-      Object.assign(info, mod)
-      info.exists = exists
-
-      if (!exists) {
-        dialog.showMessageBoxSync(this, {
-          type: 'info',
-          buttons: ['OK'],
-          title: 'Mod not found',
-          message: `Couldn't find a KCCP mod in this location.\nlocation: ${mod.path}`,
-        })
-      } else {
-        try {
-          const modData = JSON.parse(fsSync.readFileSync(mod.path))
-          info.info = modData
-          if (modData.updateUrl) {
-            if (mod.lastCheck == undefined || mod.lastCheck < Date.now() - 3 * 60 * 60 * 1000) {
-              try {
-                mod.lastCheck = Date.now()
-                console.log(`>> checking for update for KCCP mod ${modData.name}`)
-                const response = await fetch(modData.updateUrl)
-                const updateJson = await response.json()
-                const oldVersion = mod.latestVersion
-                mod.latestVersion = updateJson.version
-                mod.url = updateJson.downloadUrl || updateJson.url || updateJson.updateUrl
-
-                modified = true
-              } catch (error) {
-                console.error(
-                  `failed to check for updates for KCCP mod ${mod.name} at ${mod.updateUrl}`,
-                )
-              }
-            }
-          }
-
-          if (modData.requireScripts && !mod.allowScripts) {
-            const message = `The mod '${modData.name}' (${mod.path}) requires scripts to be enabled. Do you trust this mod?`
-            const resp = dialog.showMessageBoxSync(this, {
-              type: 'question',
-              buttons: ['Yes', 'No'],
-              title: 'Mod Scripts',
-              message,
-            })
-            if (resp == 1) {
-              const ind = config.mods.indexOf(mod)
-              config.mods.splice(ind, 1)
-              continue
-            }
-            mod.allowScripts = true
-            modified = true
-          }
-        } catch (error) {
-          dialog.showMessageBoxSync(this, {
-            type: 'info',
-            buttons: ['OK'],
-            title: 'Mod load error',
-            message: `Failed to load metadata for mod.\nlocation: ${mod.path}\nerror:${error}`,
-          })
-        }
-      }
-
-      modInfo.push(info)
-    }
-
-    if (modified) {
-      await setKccpConfig(config)
-      await kccpPatcher.reloadModCache()
-      await startStopKccp(kccpStatus.busyActions)
-    }
-
-    return { config, modInfo, modified }
-  } finally {
-    kccpStatus.busyActions--
-    kccpSendStatusUpdate()
-  }
-}
-
-const setKccpConfig = async function (kccpConfig) {
-  await kccp.config.setConfig(kccpConfig, true)
-  const windows = BrowserWindow.getAllWindows()
-  if (windows.length == 0) {
-    console.log('No windows to report to.')
-    return
-  }
-  windows[0].webContents.send('webui-message', {
-    type: 'kccp-config-saved',
-    data: { config: kccpConfig },
+if (cfg.app.update.auto) {
+  console.log('Checking for updates...')
+  updateElectronApp({
+    updateSource: {
+      type: UpdateSourceType.StaticStorage,
+      baseUrl: `https://tsunkit.net/damecon-browser/updates/${process.platform}/${process.arch}`,
+    },
+    updateInterval: '6 hours',
+    logger: { log: (msg) => kccp.logger.log('update-electron-app', msg) },
   })
-}
-
-const initKccp = function () {
-  kccp.logger.registerElectron(ipcMain, app)
-  kccp.config.loadConfig(app)
-}
-
-const startStopKccp = async function (expectedBusyActions = 0) {
-  while (kccpStatus.busyActions > expectedBusyActions) {
-    console.log('KCCP currently busy, waiting...')
-    await setTimeout(1000)
-  }
-  kccpStatus.busyActions++
-  kccpStatus.started = false
-  kccpSendStatusUpdate()
-  try {
-    const enabled = configStore.get('proxy.enable')
-    const mode = configStore.get('proxy.mode')
-
-    if (enabled !== true || mode !== 'kccp-internal') {
-      stopKccp()
-      return
-    }
-
-    console.log(`>> ${kccpProxy ? 're' : ''}starting KCCacheProxy`)
-
-    if (kccpProxy) {
-      kccpProxy.close()
-      console.log('>> waiting for KCCacheProxy to stop listening...')
-      while (kccpProxy.server.listening) {
-        await setTimeout(10)
-      }
-      console.log('! KCCacheProxy stopped listening.')
-    }
-
-    kccpProxy = new kccp.Proxy()
-    await kccpProxy.init()
-    await kccpProxy.start()
-    console.log('>> waiting for KCCacheProxy to start listening...')
-    while (!kccpProxy.server.listening) {
-      await setTimeout(10)
-    }
-    console.log('! KCCacheProxy now listening.')
-  } catch (error) {
-    console.error(`error occurred starting KCCacheProxy.`, error)
-    stopKccp()
-  } finally {
-    kccpStatus.busyActions--
-    kccpStatus.started = true
-    kccpSendStatusUpdate()
-  }
-}
-
-const stopKccp = function () {
-  if (kccpProxy) {
-    console.log('>> shutting down KCCacheProxy')
-    kccpProxy?.close()
-    kccpProxy = undefined
-  }
-}
-
-function getKccpModPath(kccpConfig) {
-  return kccpConfig.mods.length > 0
-    ? path.join(kccpConfig.mods[kccpConfig.mods.length - 1].path, '..')
-    : undefined
-}
-function getKccpImgCachePath(kccpConfig) {
-  let cachePath = kccpConfig.cacheLocation
-  if (kccpConfig.cacheLocation == undefined || kccpConfig.cacheLocation == 'default')
-    cachePath = path.join(app.getPath('userData'), 'ProxyData', 'cache')
-  cachePath = path.join(cachePath, 'kcs2', 'img')
-  return cachePath
 }
 
 const getParentWindowOfTab = (tab) => {
@@ -335,7 +192,7 @@ class TabbedBrowserWindow {
     this.webContents.loadURL(webuiUrl)
 
     queueMicrotask(async () => {
-      await startStopKccp()
+      await startStopKccp(configStore)
       await this.applyProxy()
 
       for (const url in options.initialUrls) {
@@ -440,7 +297,7 @@ class TabbedBrowserWindow {
         host = configStore.get('proxy.client.host')
         port = configStore.get('proxy.client.port')
       } else {
-        const kccpConfig = await getKccpConfig()
+        const kccpConfig = await getKccpConfig(configStore)
         host = kccpConfig.config.hostname
         port = kccpConfig.config.port
       }
@@ -495,17 +352,6 @@ class Browser {
     })
 
     app.on('web-contents-created', this.onWebContentsCreated.bind(this))
-
-    // only allow one instance to run for now
-    if (!app.requestSingleInstanceLock()) {
-      app.quit()
-      return
-    }
-    app.on('second-instance', () => {
-      const mainWindow = this.windows[0].window
-      if (mainWindow.isMinimized()) mainWindow.restore()
-      mainWindow.show()
-    })
   }
 
   destroy() {
@@ -737,7 +583,7 @@ class Browser {
         case 'set-config-item':
           result = configStore.set(data.key, data.value)
           if (data.key.startsWith('proxy.')) {
-            await startStopKccp()
+            await startStopKccp(configStore)
             await win.applyProxy()
           } else if (data.key == 'kc3kai.update.channel') {
             if (kc3ExtensionId) this.session.removeExtension(kc3ExtensionId)
@@ -789,14 +635,14 @@ class Browser {
           this.confirmCloseTab(data.tabId)
           break
         case 'kccp-get-status':
-          result = kccpStatus
+          result = getKccpStatus()
           break
         case 'kccp-get-config':
-          result = await getKccpConfig()
+          result = await getKccpConfig(configStore)
           break
         case 'kccp-save-config':
           await setKccpConfig(data)
-          await startStopKccp()
+          await startStopKccp(configStore)
           await win.applyProxy() // reapply to react to updated ip/port
           break
         case 'kccp-import-cache':
@@ -840,7 +686,7 @@ class Browser {
           await kccpCacheHandler.verifyCache(verifyResponse === 1)
           break
         case 'kccp-extract-spritesheet':
-          kccpConfig = await getKccpConfig()
+          kccpConfig = await getKccpConfig(configStore)
           cachePath = getKccpImgCachePath(kccpConfig.config)
           source = await dialog.showOpenDialog({
             title: 'Select a spritesheet',
@@ -864,7 +710,7 @@ class Browser {
           await kccpModderUtils.extractSplit(source.filePaths[0], target.filePaths[0])
           break
         case 'kccp-make-outlines':
-          kccpConfig = await getKccpConfig()
+          kccpConfig = await getKccpConfig(configStore)
           cachePath = getKccpImgCachePath(kccpConfig.config)
           source = await dialog.showOpenDialog({
             title: 'Select a spritesheet',
@@ -894,7 +740,7 @@ class Browser {
           await kccpModderUtils.outlines(source.filePaths[0], target.filePath)
           break
         case 'kccp-convert-poi':
-          kccpConfig = await getKccpConfig()
+          kccpConfig = await getKccpConfig(configStore)
           source = await dialog.showOpenDialog({
             title: 'Select cache folder to import from',
             defaultPath: getModPath(kccpConfig.config),
@@ -912,7 +758,7 @@ class Browser {
           await kccpModderUtils.importExternalMod(source.filePaths[0], target.filePaths[0])
           break
         case 'kccp-add-mod':
-          kccpConfig = await getKccpConfig()
+          kccpConfig = await getKccpConfig(configStore)
           const addModResponse = await dialog.showOpenDialog({
             title: 'Select a mod metadata file',
             filters: [
@@ -931,7 +777,8 @@ class Browser {
           }
           kccpConfig.config.mods.push({ path: addModResponse.filePaths[0] })
           await setKccpConfig(kccpConfig.config)
-          //await startStopKccp() // will automatically start when fetching the config and checking for updates
+          //await startStopKccp(configStore)
+          // will automatically start when fetching the config and checking for updates
           await win.applyProxy()
           break
         case 'kccp-log-get-recent':
@@ -1003,13 +850,6 @@ class Browser {
   initSession() {
     //console.log('>> main.initSession()')
     this.session = session.defaultSession
-
-    // Remove Electron and App details to closer emulate Chrome's UA
-    const userAgent = this.session
-      .getUserAgent()
-      .replace(/\sElectron\/\S+/, '')
-      .replace(new RegExp(`\\s${app.getName()}/\\S+`), '')
-    this.session.setUserAgent(userAgent)
 
     this.session.serviceWorkers.on('running-status-changed', (event) => {
       console.info(`service worker ${event.versionId} ${event.runningStatus}`)
@@ -1087,61 +927,67 @@ class Browser {
     this.createTabbedWindow()
   }
 
+  windowOpenHandler(webContents, details) {
+    switch (details.disposition) {
+      case 'foreground-tab':
+      case 'background-tab':
+      case 'new-window': {
+        queueMicrotask(() => {
+          const win = this.getWindowFromWebContents(webContents)
+          if (!win) return
+          const opts = {}
+          const tab = win.tabs.create(opts)
+          if (
+            process.env.SHELL_DEBUG ||
+            ((details.url == kc3StartPageUrl || details.url == DMMPageUrl) &&
+              configStore.get('kc3kai.startup.openDevtools'))
+          ) {
+            tab.webContents.openDevTools({ activate: true })
+          }
+
+          // POST submission
+          const loadOpts = {}
+          if (details.referrer) loadOpts.httpReferrer = details.referrer
+          if (details.postBody) {
+            loadOpts.postData = details.postBody.data
+            if (details.postBody.contentType)
+              loadOpts.extraHeaders = `Content-Type: ${details.postBody.contentType}`
+          }
+
+          tab.loadURL(details.url, loadOpts)
+
+          // extension popups don't auto-close when using window.open for whatever reason
+          if (this.popup) {
+            this.popup.destroy()
+          }
+        })
+
+        return { action: 'deny' }
+      }
+      default:
+        return { action: 'allow' }
+    }
+  }
+
   async onWebContentsCreated(event, webContents) {
-    //console.log('>> main.onWebContentsCreated()')
     const browser = this
     const type = webContents.getType()
     const url = webContents.getURL()
-    //console.log(`'web-contents-created' event [type:${type}, url:${url}]`)
+
+    webContents.on('devtools-opened', (e) => {
+      console.log('devtools opened')
+      webContents.devToolsWebContents.on('did-create-window', (window, details) => {
+        console.log(details)
+      })
+    })
 
     if (process.env.SHELL_DEBUG && ['backgroundPage', 'remote'].includes(webContents.getType())) {
-      //console.log('>> main: opening devtools')
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 
-    webContents.setWindowOpenHandler((details) => {
-      switch (details.disposition) {
-        case 'foreground-tab':
-        case 'background-tab':
-        case 'new-window': {
-          //console.log('>> main: webContents.setWindowOpenHandler()', details.disposition)
-          queueMicrotask(() => {
-            //console.log('>> main: creating window', details)
-            const win = this.getWindowFromWebContents(webContents)
-            if (!win) return
-            const opts = {}
-            const tab = win.tabs.create(opts)
-            if (
-              process.env.SHELL_DEBUG ||
-              ((details.url == kc3StartPageUrl || details.url == DMMPageUrl) &&
-                configStore.get('kc3kai.startup.openDevtools'))
-            ) {
-              tab.webContents.openDevTools({ activate: true })
-            }
-
-            // POST submission
-            const loadOpts = {}
-            if (details.referrer) loadOpts.httpReferrer = details.referrer
-            if (details.postBody) {
-              loadOpts.postData = details.postBody.data
-              if (details.postBody.contentType)
-                loadOpts.extraHeaders = `Content-Type: ${details.postBody.contentType}`
-            }
-
-            tab.loadURL(details.url, loadOpts)
-
-            // extension popups don't auto-close when using window.open for whatever reason
-            if (this.popup) {
-              this.popup.destroy()
-            }
-          })
-
-          return { action: 'deny' }
-        }
-        default:
-          return { action: 'allow' }
-      }
-    })
+    webContents.setWindowOpenHandler((details) =>
+      this.windowOpenHandler.bind(this)(webContents, details),
+    )
 
     webContents.on('context-menu', (event, params) => {
       const menu = buildChromeContextMenu({

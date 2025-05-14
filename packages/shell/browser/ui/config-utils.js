@@ -1,4 +1,9 @@
 const configSchema = {
+  app: {
+    update: {
+      auto: { type: 'bool', default: true },
+    },
+  },
   window: {
     state: {
       width: { type: 'number', default: 1200 },
