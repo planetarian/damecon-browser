@@ -120,11 +120,6 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
   console.log("!! shouldn't see me !!")
 }
-app.on('second-instance', () => {
-  const mainWindow = this.windows[0].window
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.show()
-})
 
 //app.userAgentFallback = app.userAgentFallback.replace(' Electron/' + process.versions.electron, '');
 // Shorten 'Electron' so we can bypass Google's "Unsecure" browser block without losing version information
@@ -402,6 +397,11 @@ class Browser {
       if (process.platform !== 'darwin') {
         this.destroy()
       }
+    })
+    app.on('second-instance', () => {
+      const mainWindow = this.windows[0].window
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.show()
     })
 
     app.on('activate', () => {
