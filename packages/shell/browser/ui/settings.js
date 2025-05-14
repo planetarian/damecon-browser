@@ -3,7 +3,7 @@ ko.extenders.scrollFollow = function (target, selector) {
     var el = document.querySelector(selector)
 
     // the scroll bar is all the way down, so we know they want to follow the text
-    if (el.scrollTop == el.scrollHeight - el.clientHeight) {
+    if (el?.hasOwnProperty('scrollTop') && el.scrollTop == el.scrollHeight - el.clientHeight) {
       // have to push our code outside of this thread since the text hasn't updated yet
       setTimeout(function () {
         el.scrollTop = el.scrollHeight - el.clientHeight
@@ -454,12 +454,13 @@ class Settings {
               else this.appLogRecent.push(msg.data)
               break
             case 'kccp-log-recent':
-              const kccpLog = msg.data
-                .reverse()
-                .filter((l) => l[1].startsWith('kccp-') && this.logTypes.includes(l[2]))
-              const appLog = msg.data
-                .reverse()
-                .filter((l) => !l[1].startsWith('kccp-') && this.logTypes.includes(l[2]))
+              msg.data.reverse()
+              const kccpLog = msg.data.filter(
+                (l) => l[1].startsWith('kccp-') && this.logTypes.includes(l[2]),
+              )
+              const appLog = msg.data.filter(
+                (l) => !l[1].startsWith('kccp-') && this.logTypes.includes(l[2]),
+              )
               this.kccpLogRecent(kccpLog)
               this.appLogRecent(appLog)
               break

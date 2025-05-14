@@ -201,7 +201,7 @@
               <small>
                 <span data-bind="text: $data[2], attr: { class: `badge badge-${$parent.badgeClasses[$data[2]]}` }"></span>
                 <!-- ko foreach: $data.slice(3) -->
-                <span data-bind="text: $data"></span>
+                <span data-bind="text: typeof $data === 'object' ? JSON.stringify($data) : $data"></span>
                 <!-- /ko -->
               </small>
             </li>
@@ -361,8 +361,8 @@
           </div>
           <!-- ko if: kccpConfig.useCacheLocation -->
           <div class="input-group col">
-            <input id="proxycachelocation" type="text" class="form-control" data-bind="value: kccpConfig.cacheLocation, enable: kccpConfig.useCacheLocation" placeholder="Select cache location">
-            <div class=" input-group-append">
+            <input id="proxycachelocation" type="text" class="form-control sensitive" data-bind="value: kccpConfig.cacheLocation, enable: kccpConfig.useCacheLocation" placeholder="Select cache location">
+            <div class="input-group-append">
               <button type="button" class="btn btn-secondary-sm" data-bind="enable: kccpConfig.useCacheLocation">browse</button>
             </div>
           </div>
