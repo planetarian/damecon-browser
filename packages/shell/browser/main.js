@@ -10,6 +10,7 @@ import {
   nativeTheme,
   dialog,
   autoUpdater,
+  webFrameMain,
 } from 'electron'
 
 if (require('electron-squirrel-startup')) app.quit()
@@ -1060,6 +1061,33 @@ class Browser {
     }
   }
 
+  canvasUpdateJs = `
+    (function() {
+      console.log("Injecting {preserveDrawingBuffer: true} into canvas getContext.", document?.URL)
+
+      // Set preserveDrawingBuffer to true, so we can save canvas as image :)
+      // Source from https://github.com/greggman/webgl-helpers/blob/master/webgl-force-preservedrawingbuffer.js
+      if (typeof HTMLCanvasElement !== "undefined") {
+        wrapGetContext(HTMLCanvasElement);
+      }
+      if (typeof OffscreenCanvas !== "undefined") {
+        wrapGetContext(OffscreenCanvas);
+      }
+
+      function wrapGetContext(ContextClass) {
+        const isWebGL = /webgl/i;
+
+        ContextClass.prototype.getContext = function(origFn) {
+          return function(type, attributes) {
+            if (isWebGL.test(type)) {
+              attributes = Object.assign({}, attributes || {}, {preserveDrawingBuffer: true});
+            }
+            return origFn.call(this, type, attributes);
+          };
+        }(ContextClass.prototype.getContext);
+      }
+    }());`
+
   async onWebContentsCreated(event, webContents) {
     const browser = this
     const type = webContents.getType()
@@ -1121,6 +1149,25 @@ class Browser {
     webContents.on('will-prevent-unload', (event) => {
       if (this.checkConfirmClose()) event.preventDefault()
     })
+
+    // Inject canvas getContext interception so we can copy/save canvas contents as an image
+    webContents.on(
+      'did-frame-navigate',
+      (
+        event,
+        url,
+        httpResponseCode,
+        httpStatusText,
+        isMainFrame,
+        frameProcessId,
+        frameRoutingId,
+      ) => {
+        const skip = ['devtools:', 'about:']
+        if (skip.some((s) => url.startsWith(s))) return
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)
+        frame.executeJavaScript(this.canvasUpdateJs)
+      },
+    )
   }
 
   checkConfirmClose() {
