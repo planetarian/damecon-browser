@@ -77,6 +77,10 @@ const configSchema = {
   },
 }
 
+const updateConfigDefaults = function (options) {
+  if (options.preexisting) configSchema.app.data.location.default = 'appdir'
+}
+
 const configApply = async function (config, propertyCallback, schema = configSchema, path = '') {
   for (const key in schema) {
     const keyPath = path ? `${path}.${key}` : key
@@ -129,8 +133,20 @@ const populateConfigDefaults = function (config, schema = configSchema) {
 }
 
 if (typeof window !== 'undefined') {
-  Object.assign(window, { configSchema, configApply, configApplySync, populateConfigDefaults })
+  Object.assign(window, {
+    configSchema,
+    updateConfigDefaults,
+    configApply,
+    configApplySync,
+    populateConfigDefaults,
+  })
 }
 if (typeof module !== 'undefined') {
-  module.exports = { configSchema, configApply, configApplySync, populateConfigDefaults }
+  module.exports = {
+    configSchema,
+    updateConfigDefaults,
+    configApply,
+    configApplySync,
+    populateConfigDefaults,
+  }
 }

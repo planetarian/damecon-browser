@@ -24,6 +24,7 @@ module.exports = {
       config: (arch) => ({
         remoteReleases: `https://tsunkit.net/damecon-browser/updates/win32/${arch}`,
         setupIcon: 'icon.ico',
+        authors: 'TsunKit',
       }),
     },
   ],

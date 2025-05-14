@@ -19,7 +19,7 @@ import { updateElectronApp, UpdateSourceType } from 'update-electron-app'
 
 // damecon config
 import ConfigStore from 'configstore'
-import { configSchema, populateConfigDefaults } from './ui/config-utils.js'
+import { configSchema, updateConfigDefaults, populateConfigDefaults } from './ui/config-utils.js'
 
 // These two break if using import syntax...?
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
@@ -55,19 +55,46 @@ import {
   getKccpImgCachePath,
 } from './kccp-integration.js'
 
+const logSource = 'damecon-browser'
+
+const homePath = app.getPath('home')
+const hideHome = function (filePath) {
+  return filePath.replace(homePath, process.platform == 'win32' ? '%USERPROFILE%' : '~')
+}
+
 // folder the app was launched from
 // for installed versions, this is the squirrel folder, not the folder containing resource.
 let appDir = app.getAppPath()
-const appDirCheck = /(?<base>.+)[\\/]app-\d+\.\d+\.\d+$/.exec(appDir)
-if (!!appDirCheck) appDir = appDirCheck.groups.base
+kccp.logger.log(logSource, 'Base appPath:', hideHome(appDir))
+let isSquirrel = false
+const appDirCheck =
+  /^(?<base>.+?)[\\/](?<path>(?<squirrelpath>app-\d+\.\d+\.\d+[\\/])?resources[\\/]app\.asar)$/.exec(
+    appDir,
+  )
+if (!!appDirCheck) {
+  appDir = appDirCheck.groups.base
+  isSquirrel = !!appDirCheck.groups.squirrelpath
+}
+kccp.logger.log(logSource, `${isSquirrel ? 'Running' : 'Not running'} via Squirrel.`)
 
 // ~\AppData\Roaming in windows, or ~/.config in linux.
 const appDataDir = app.getPath('userData')
 
 // store config.json in the app folder when running packaged.
 const cfgOpts = {}
-if (app.isPackaged) cfgOpts.configPath = path.join(appDir, 'config.json')
-else cfgOpts.globalConfigPath = true
+if (app.isPackaged) {
+  cfgOpts.configPath = path.join(appDir, 'config.json')
+  kccp.logger.log(logSource, 'Config path: ', hideHome(cfgOpts.configPath))
+} else {
+  cfgOpts.globalConfigPath = true
+  kccp.logger.log(logSource, 'Using global config path.')
+}
+
+const preexisting = fsSync.existsSync(path.join(appDir, 'userdata'))
+if (preexisting)
+  kccp.logger.log(logSource, 'Detected preexisting userdata at current app location.')
+
+updateConfigDefaults({ isSquirrel, preexisting })
 
 const configStore = new ConfigStore('damecon-browser', {}, cfgOpts)
 
@@ -105,7 +132,7 @@ app.userAgentFallback = app.userAgentFallback.replace(' Electron/', ' Elec/')
 console.log('User-Agent:', app.userAgentFallback)
 
 // determine where the userdata/extensions folders should be stored
-const homeDataLocation = path.join(app.getPath('home'), app.name)
+const homeDataLocation = path.join(homePath, app.name)
 const dataLocation = cfg.app.data.location
 let dataPath = appDir
 switch (dataLocation) {
@@ -147,7 +174,7 @@ const PATHS = {
   //KC3_EXTENSIONS: path.join(ROOT_DIR, 'ext_kc3kai'),
 }
 
-console.log(`Is packaged: ${app.isPackaged}`)
+kccp.logger.log(logSource, `Is packaged: ${app.isPackaged}`)
 console.log(`SHELL_ROOT_DIR: ${SHELL_ROOT_DIR}`)
 console.log(`ROOT_DIR: ${ROOT_DIR}`)
 console.log(`PATHS:`, PATHS)
@@ -171,7 +198,7 @@ const manifestExists = async (dirPath) => {
 }
 
 if (cfg.app.update.auto) {
-  console.log('Checking for updates...')
+  kccp.logger.log(logSource, 'Checking for updates.')
   updateElectronApp({
     updateSource: {
       type: UpdateSourceType.StaticStorage,
@@ -517,7 +544,7 @@ class Browser {
 
     // Wait for web store extensions to finish loading as they may change the
     // newtab URL.
-    console.log('>> main: initializing webstore system...')
+    kccp.logger.log(logSource, 'Initializing webstore system.')
     await installChromeWebStore({
       session: this.session,
       async beforeInstall(details) {
@@ -544,19 +571,20 @@ class Browser {
 
     //if (!app.isPackaged) {
     if (fsSync.existsSync(PATHS.LOCAL_EXTENSIONS)) {
-      console.log('>> main: loading extensions')
+      kccp.logger.log(logSource, 'Loading extensions')
       await loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, {
         allowUnpacked: true,
         filterRegex: /^(?!kc3kai).*(?:[/\\]src)?$/,
         filterCallback: (ext) => {
-          console.log(`Checking extension ${ext.manifest.name}`)
+          kccp.logger.log(logSource, `Checking extension ${ext.manifest.name}`)
           if (ext.manifest.name === 'uBlock Origin') {
             const version = ext.manifest.version.split('.').map((i) => parseInt(i))
             const v = [1, 47, 4]
             if ([0, 1].some((i) => version[i] > v[i])) {
               const notice = `${ext.manifest.name} versions above ${v.join('.')} may cause a severe memory leak and are currently unsupported.`
-              console.error(notice)
-              console.warn(
+              kccp.logger.error(logSource, notice)
+              kccp.logger.log(
+                logSource,
                 `${ext.manifest.name} version ${ext.manifest.version} will not be loaded.`,
               )
               return false
@@ -567,13 +595,13 @@ class Browser {
       })
     }
 
-    console.log('>> main: starting extension workers...')
+    kccp.logger.log(logSource, 'Starting extension workers.')
     await Promise.all(
       this.session.getAllExtensions().map(async (extension) => {
         const manifest = extension.manifest
         if (manifest.manifest_version === 3 && manifest?.background?.service_worker) {
           await this.session.serviceWorkers.startWorkerForScope(extension.url).catch((error) => {
-            console.error(error)
+            kccp.logger.error(logSource, error)
           })
         }
       }),
@@ -583,14 +611,14 @@ class Browser {
     const bright = configStore.get('window.style.brightness') || 'system'
     nativeTheme.themeSource = bright
     nativeTheme.on('updated', (ev) => {
-      //console.log('nativeTheme.updated', ev)
+      //kccp.logger.log(logSource, 'nativeTheme.updated', ev)
     })
 
     // initial window creation
     const webuiBase = 'chrome-extension://' + webuiExtensionId
     newTabUrl = webuiBase + '/new-tab.html'
     settingsUrl = webuiBase + '/settings.html'
-    //console.log('>> main: now creating window...')
+    //kccp.logger.log(logSource, '>> main: now creating window.')
     const win = this.createTabbedWindow({
       initialUrls: [],
       hideAddressBarFor: [settingsUrl],
@@ -598,7 +626,7 @@ class Browser {
 
     // Messages from webui/settings
     ipcMain.handle('webui-message', async (ev, type, data) => {
-      //console.log('main.js received message from webui.js', type, data)
+      //kccp.logger.log(logSource, 'main.js received message from webui.js', type, data)
 
       let result
       let kccpConfig, cachePath, source, target // reusables
@@ -652,7 +680,7 @@ class Browser {
           break
         case 'clear-cache':
           await win.window.webContents.session.clearCache()
-          console.log('Cache cleared.')
+          kccp.logger.log(logSource, 'Cache cleared.')
           break
         case 'kc3-doupdate':
           await this.updateKc3(configStore.get('kc3kai.update.channel'))
@@ -668,14 +696,14 @@ class Browser {
           result = { canceled, filePaths }
           break
         case 'webui-zoom-changed':
-          //console.log('zoom changed', data)
+          //kccp.logger.log(logSource, 'zoom changed', data)
           win.tabs.updateLayout(data.height)
           break
         case 'webui-display-mode-changed':
           win.tabs.updateLayout(data.height)
           break
         case 'webui-close-tab':
-          //console.log('clicked tab X', data)
+          //kccp.logger.log(logSource, 'clicked tab X', data)
           this.confirmCloseTab(data.tabId)
           break
         case 'kccp-get-status':
@@ -712,7 +740,7 @@ class Browser {
               }
             }
           } catch (error) {
-            console.error("Couldn't load cache dump from location", location)
+            kccp.logger.error(logSource, "Couldn't load cache dump.", error)
           }
           break
         case 'kccp-verify-cache':
@@ -816,7 +844,7 @@ class Browser {
           })
           if (addModResponse.canceled) return
           if (kccpConfig.config.mods.map((m) => m.path).includes(addModResponse.filePaths[0])) {
-            console.error('error', new Date(), 'Mod already added')
+            kccp.logger.error(logSource, 'Mod already added')
             return
           }
           kccpConfig.config.mods.push({ path: addModResponse.filePaths[0] })
@@ -847,7 +875,7 @@ class Browser {
     this.resolveReady()
 
     // set up kc3 update worker thread
-    console.log('>> main: starting kc3 update service')
+    kccp.logger.log(logSource, 'Starting KC3 update service')
 
     this.kc3UpdateWorker = new kc3UpdateWorker()
     this.kc3UpdateWorker.on('message', async (msg) => {
@@ -950,7 +978,7 @@ class Browser {
         configStore.set('window.state.width', size[0])
         configStore.set('window.state.height', size[1])
       } catch (error) {
-        console.error('Failed to set window.state values during resize.')
+        kccp.logger.error(logSource, 'Failed to set window.state values during resize.')
       }
     })
     this.windows.push(win)
@@ -1019,9 +1047,9 @@ class Browser {
     const url = webContents.getURL()
 
     webContents.on('devtools-opened', (e) => {
-      console.log('devtools opened')
+      kccp.logger.log(logSource, 'DevTools opened')
       webContents.devToolsWebContents.on('did-create-window', (window, details) => {
-        console.log(details)
+        kccp.logger.log(logSource, 'Window created', details)
       })
     })
 
@@ -1162,7 +1190,7 @@ class Browser {
         let date = new Date(lastUpdated)
         date.setDate(date.getDate() + scheduleMap[schedule])
         doUpdate = date < new Date()
-        console.log('Next KC3 update scheduled for ', date)
+        kccp.logger.log(logSource, 'Next KC3 update scheduled for ', date)
       }
     }
 
@@ -1188,26 +1216,38 @@ class Browser {
     }
 
     if (!kc3Path) {
-      console.log('No kc3 path defined.')
+      kccp.logger.log(logSource, 'No kc3 path defined.')
       return
     }
 
     const kc3SrcPath = path.join(kc3Path, 'src')
     if (fsSync.existsSync(kc3SrcPath)) kc3Path = kc3SrcPath
-    console.log('Searching for KC3Kai in', kc3Path)
+    kccp.logger.log(logSource, 'Searching for KC3Kai in', hideHome(kc3Path))
 
     // once we're updated and kc3 is loaded, remove the default new tab page
     // and open the kc3 start page + strat room
+
+    if (!fsSync.existsSync(kc3Path)) {
+      kccp.logger.error(logSource, `Unable to find KC3 in ${hideHome(kc3Path)}.`)
+      kccp.logger.log(
+        logSource,
+        "Please open the KC3Kai section and click 'Check for updates & reload'.",
+      )
+      return
+    }
 
     let kc3
     try {
       kc3 = await this.session.loadExtension(kc3Path)
     } catch (error) {
-      console.error(`Unable to load KC3 from ${kc3Path}. It may need to be installed/updated.`)
-      console.error(error)
+      kccp.logger.error(
+        logSource,
+        `Unable to load KC3 from ${hideHome(kc3Path)}. It may need to be installed/updated.`,
+      )
+      kccp.logger.error(logSource, error)
       return
     }
-    console.log('KC3Kai loaded! ID: ', kc3.id)
+    kccp.logger.log(logSource, 'KC3Kai loaded! ID: ', kc3.id)
 
     // open KC3 start page
     kc3ExtensionId = kc3.id
