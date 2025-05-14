@@ -127,9 +127,11 @@
             </div>
             <!-- /ko -->
           </div>
-          <div class="form-array-string-item add-new">
-            <label for="new-hide-adressbar-site-input">Add:</label>
-            <div class="input-group">
+          <div class="form-array-string-item add-new form-row">
+            <div class="input-group col col-sm-2">
+              <label for="new-hide-adressbar-site-input">Add site:</label>
+            </div>
+            <div class="input-group col">
               <input id="new-hide-adressbar-site-input" type="text" class="form-control" data-bind="value: newHideAddressBarSite, valueUpdate: 'afterkeydown'" placeholder="e.g. https://tsunkit.net/*">
               <div class="input-group-append">
                 <button type="button" class="btn btn-secondary" data-bind="click: addNewHideAddressBarSite, enable: canAddNewHideAddressBarSite" title="add a site to hide addressbar for"><i class="fa-sharp fa-solid fa-plus"></i></button>
@@ -167,7 +169,7 @@
           <label class="form-check-label" for="appupdatesauto">Download app updates automatically</label>
         </div>
         <div class="form-row">
-          <label for="appdatalocation" class="col-sm-3">Data location</label>
+          <label for="appdatalocation" class="col-sm-3">User data location</label>
           <select id="appdatalocation" class="col form-control" data-bind="options: configSchema.app.data.location.options, value: config.app.data.location"></select>
         </div>
         <!-- ko if: config.app.data.location() != 'custom' -->
