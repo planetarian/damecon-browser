@@ -51,6 +51,7 @@ import {
   setKccpConfig,
   initKccp,
   startStopKccp,
+  getKccpCachePath,
   getKccpModPath,
   getKccpImgCachePath,
 } from './kccp-integration.js'
@@ -680,6 +681,24 @@ class Browser {
           break
         case 'clear-cache':
           await win.window.webContents.session.clearCache()
+          if (
+            configStore.get('proxy.enable') &&
+            configStore.get('proxy.mode') === 'kccp-internal'
+          ) {
+            const kccpCfg = await getKccpConfig(configStore)
+            const cachePath = getKccpCachePath(kccpCfg.config)
+            const mainjsPath = path.join(cachePath, 'kcs2', 'js', 'main.js')
+            if (fsSync.existsSync(mainjsPath)) {
+              kccp.logger.log(logSource, 'Deleting main.js from internal KCCacheProxy cache.')
+              try {
+                fsSync.rmSync(mainjsPath)
+              } catch (error) {
+                kccp.logger.error(logSource, 'Failed to delete main.js from', hideHome(mainjsPath))
+                kccp.logger.error(logSource, error)
+              }
+            }
+          }
+
           kccp.logger.log(logSource, 'Cache cleared.')
           break
         case 'kc3-doupdate':

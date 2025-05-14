@@ -210,18 +210,27 @@ const stopKccp = function () {
   }
 }
 
+function getKccpCachePath(kccpConfig) {
+  let cachePath = kccpConfig.cacheLocation
+  if (
+    !kccpConfig.cacheLocation ||
+    kccpConfig.cacheLocation == undefined ||
+    kccpConfig.cacheLocation == 'default'
+  )
+    cachePath = path.join(app.getPath('userData'), 'ProxyData', 'cache')
+  return cachePath
+}
+
+function getKccpImgCachePath(kccpConfig) {
+  let cachePath = getKccpCachePath(kccpConfig)
+  cachePath = path.join(cachePath, 'kcs2', 'img')
+  return cachePath
+}
+
 function getKccpModPath(kccpConfig) {
   return kccpConfig.mods.length > 0
     ? path.join(kccpConfig.mods[kccpConfig.mods.length - 1].path, '..')
     : undefined
-}
-
-function getKccpImgCachePath(kccpConfig) {
-  let cachePath = kccpConfig.cacheLocation
-  if (kccpConfig.cacheLocation == undefined || kccpConfig.cacheLocation == 'default')
-    cachePath = path.join(app.getPath('userData'), 'ProxyData', 'cache')
-  cachePath = path.join(cachePath, 'kcs2', 'img')
-  return cachePath
 }
 
 function getKccpStatus() {
@@ -236,6 +245,7 @@ export {
   initKccp,
   startStopKccp,
   stopKccp,
-  getKccpModPath,
+  getKccpCachePath,
   getKccpImgCachePath,
+  getKccpModPath,
 }
