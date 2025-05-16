@@ -101,9 +101,13 @@
         <li class="nav-item">
           <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${appTab() == 2 ? ' active' : ''}` }, click: () => appTab(2)">Application Log</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-bind="attr: { class: `nav-link${appTab() == 9 ? ' active' : ''}` }, click: () => appTab(9)">Advanced</a>
+        </li>
       </ul>
       <div class="form-group"></div>
       <!-- ko if: appTab() == 0 -->
+      <h5>Style</h5>
       <div class="settings-group">
         <div class="form-row">
           <label for="windowstyletheme" class="col-sm-3">Theme</label>
@@ -114,6 +118,7 @@
           <select id="windowstylebright" class="col form-control" data-bind="options: configSchema.window.style.brightness.options, value: config.window.style.brightness"></select>
         </div>
       </div>
+      <h5>View</h5>
       <div class="settings-group">
         <div class="form-group">
           <label>Hide address bar for sites (Alt+A to override)</label>
@@ -144,19 +149,19 @@
             <label>Show in tab bar when hidden:</label>
           </div>
           <div>
-            <input type="checkbox" id="always-show-extensions" data-bind="checked: config.window.view.alwaysShowExtensions"></input>
+            <input type="checkbox" id="always-show-extensions" data-bind="checked: config.window.view.alwaysShowExtensions">
             <label for="always-show-extensions" title="extensions"><i class="fa-solid fa-puzzle-piece"></i></label>
           </div>
           <div>
-            <input type="checkbox" id="always-show-goback" data-bind="checked: config.window.view.alwaysShowBack"></input>
+            <input type="checkbox" id="always-show-goback" data-bind="checked: config.window.view.alwaysShowBack">
             <label for="always-show-goback" title="go back"><i class="fa-solid fa-arrow-left"></i></label>
           </div>
           <div>
-            <input type="checkbox" id="always-show-goforward" data-bind="checked: config.window.view.alwaysShowForward"></input>
+            <input type="checkbox" id="always-show-goforward" data-bind="checked: config.window.view.alwaysShowForward">
             <label for="always-show-goforward" title="go forward"><i class="fa-solid fa-arrow-right"></i></label>
           </div>
           <div>
-            <input type="checkbox" id="always-show-reload" data-bind="checked: config.window.view.alwaysShowReload"></input>
+            <input type="checkbox" id="always-show-reload" data-bind="checked: config.window.view.alwaysShowReload">
             <label for="always-show-reload" title="refresh"><i class="fa-solid fa-rotate-right"></i></label>
           </div>
         </div>
@@ -165,8 +170,12 @@
       <!-- ko if: appTab() == 1 -->
       <div class="settings-group">
         <div class="form-group form-check">
-          <input class="form-check-input" id="appupdatesauto" type="checkbox" data-bind="checked: config.app.update.auto"></input>
+          <input class="form-check-input" id="appupdatesauto" type="checkbox" data-bind="checked: config.app.update.auto">
           <label class="form-check-label" for="appupdatesauto">Download app updates automatically</label>
+        </div>
+        <div class="form-group form-check">
+          <input class="form-check-input" id="appupdatesremoveold" type="checkbox" data-bind="checked: config.app.update.removeOld">
+          <label class="form-check-label" for="appupdatesremoveold">Clear old app files on update</label>
         </div>
         <div class="form-row">
           <label for="appdatalocation" class="col-sm-3">User data location</label>
@@ -227,6 +236,35 @@
         </div>
       </div>
       <!-- /ko -->
+      <!-- ko if: appTab() == 9 -->
+      <p>Damecon must be restarted for these settings to take effect.</p>
+      <h5>Behavior</h5>
+      <div class="settings-group">
+        <div class="form-group form-check">
+          <input class="form-check-input" id="backgroundocclusion" type="checkbox" data-bind="checked: config.window.behavior.occlusion">
+          <label class="form-check-label" for="backgroundocclusion">Throttle activity when running in background</label>
+        </div>
+      </div>
+      <h5>Graphics</h5>
+      <div class="settings-group">
+        <div class="form-group form-check">
+          <label class="form-check-label" class="col-sm-8" for="availablegpumemory">Available GPU memory (MB)</label>
+          <input id="availablegpumemory" type="number" class="col form-control" data-bind="value: config.window.gpu.availableMemoryMb" placeholder="10000" min="256" max="64000">
+        </div>
+        <div class="form-group form-check">
+          <input class="form-check-input" id="rasterization" type="checkbox" data-bind="checked: config.window.gpu.rasterization">
+          <label class="form-check-label" for="rasterization">Force GPU rasterization</label>
+        </div>
+        <div class="form-group form-check">
+          <input class="form-check-input" id="nativebuffers" type="checkbox" data-bind="checked: config.window.gpu.nativeBuffers">
+          <label class="form-check-label" for="nativebuffers">Enable native GPU memory buffers</label>
+        </div>
+        <div class="form-group form-check">
+          <input class="form-check-input" id="compositorresources" type="checkbox" data-bind="checked: config.window.gpu.compositorResources">
+          <label class="form-check-label" for="compositorresources">Enable GPU memory buffer compositor resources</label>
+        </div>
+      </div>
+      <!-- /ko -->
     </script>
 
     <script type="text/html" id="settings-content-1">
@@ -237,11 +275,11 @@
           <select id="kc3gamepage" class="col form-control" data-bind="options: configSchema.kc3kai.startup.gamePage.options, value: config.kc3kai.startup.gamePage"></select>
         </div>
         <div class="form-check">
-          <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: config.kc3kai.startup.openDevtools"></input>
+          <input class="form-check-input" id="kc3opendevtools" type="checkbox" data-bind="checked: config.kc3kai.startup.openDevtools">
           <label class="form-check-label" for="kc3opendevtools">Auto-open devtools</label>
         </div>
         <div class="form-check">
-          <input class="form-check-input" id="kc3openstratroom" type="checkbox" data-bind="checked: config.kc3kai.startup.openStratRoom"></input>
+          <input class="form-check-input" id="kc3openstratroom" type="checkbox" data-bind="checked: config.kc3kai.startup.openStratRoom">
           <label class="form-check-label" for="kc3openstratroom">Auto-open strategy room</label>
         </div>
       </div>
@@ -256,7 +294,7 @@
           <select id="kc3updateschedule" class="col form-control" data-bind="options: configSchema.kc3kai.update.schedule.options, value: config.kc3kai.update.schedule"></select>
         </div>
         <div class="form-check">
-          <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: config.kc3kai.update.auto"></input>
+          <input class="form-check-input" id="kc3updatesauto" type="checkbox" data-bind="checked: config.kc3kai.update.auto">
           <label class="form-check-label" for="kc3updatesauto">Download/apply updates automatically</label>
         </div>
         <!-- /ko -->
@@ -299,7 +337,7 @@
       <div class="settings-group" data-bind="enable: !kccpStatus().busy">
         <div class="form-check form-row row">
           <div class="form-check col-sm-3">
-            <input class="form-check-input" id="proxyenable" type="checkbox" data-bind="checked: config.proxy.enable"></input>
+            <input class="form-check-input" id="proxyenable" type="checkbox" data-bind="checked: config.proxy.enable">
             <label class="form-check-label" for="proxyenable">Enabled</label>
           </div>
           <label class="form-check-label" for="proxymode" class="col-sm-3">Mode</label>
@@ -356,7 +394,7 @@
           </div>
           <p>KCCacheProxy is built into Damecon. The hostname/port settings can be used to allow other KanColle clients to connect through this KCCP instance.</p>
           <div class="form-check">
-            <input class="form-check-input" id="useproxycachelocation" type="checkbox" data-bind="checked: kccpConfig.useCacheLocation"></input>
+            <input class="form-check-input" id="useproxycachelocation" type="checkbox" data-bind="checked: kccpConfig.useCacheLocation">
             <label class="form-check-label" for="useproxycachelocation">Custom Cache Location</label>
           </div>
           <!-- ko if: kccpConfig.useCacheLocation -->
@@ -368,19 +406,19 @@
           </div>
           <!-- /ko -->
           <div class="form-check">
-            <input class="form-check-input" id="verifycache" type="checkbox" data-bind="checked: kccpConfig.verifyCache"></input>
+            <input class="form-check-input" id="verifycache" type="checkbox" data-bind="checked: kccpConfig.verifyCache">
             <label class="form-check-label" for="verifycache">Automatically verify cache integrity (takes some time)</label>
           </div>
           <div class="form-check">
-            <input class="form-check-input" id="disablebrowserCache" type="checkbox" data-bind="checked: kccpConfig.disableBrowserCache"></input>
+            <input class="form-check-input" id="disablebrowserCache" type="checkbox" data-bind="checked: kccpConfig.disableBrowserCache">
             <label class="form-check-label" for="disablebrowserCache">Disable browser caching</label>
           </div>
           <div class="form-check">
-            <input class="form-check-input" id="gadgetbypass" type="checkbox" data-bind="checked: kccpConfig.bypassGadgetUpdateCheck"></input>
+            <input class="form-check-input" id="gadgetbypass" type="checkbox" data-bind="checked: kccpConfig.bypassGadgetUpdateCheck">
             <label class="form-check-label" for="gadgetbypass">Bypass gadget server</label>
           </div>
           <div class="form-check">
-            <input class="form-check-input" id="enablemodder" type="checkbox" data-bind="checked: kccpConfig.enableModder"></input>
+            <input class="form-check-input" id="enablemodder" type="checkbox" data-bind="checked: kccpConfig.enableModder">
             <label class="form-check-label" for="enablemodder">Enable asset modifiers</label>
           </div>
           <div class="form-group mt-3">

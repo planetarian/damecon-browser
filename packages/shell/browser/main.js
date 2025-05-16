@@ -111,10 +111,18 @@ if (typeof cfg.proxy.client.enable !== 'undefined') {
 }
 configStore.all = cfg // save with updated defaults
 
-app.commandLine.appendSwitch('force-gpu-mem-available-mb', '10000')
-app.commandLine.appendSwitch('force-gpu-rasterization')
-app.commandLine.appendSwitch('enable-native-gpu-memory-buffers')
-app.commandLine.appendSwitch('enable-gpu-memory-buffer-compositor-resources')
+if (!configStore.get('window.behavior.occlusion'))
+  app.commandLine.appendSwitch('disable-renderer-backgrounding')
+
+const gpuConfig = configStore.get('window.gpu')
+app.commandLine.appendSwitch(
+  'force-gpu-mem-available-mb',
+  Math.max(256, gpuConfig.availableMemoryMb),
+)
+if (gpuConfig.rasterization) app.commandLine.appendSwitch('force-gpu-rasterization')
+if (gpuConfig.nativeBuffers) app.commandLine.appendSwitch('enable-native-gpu-memory-buffers')
+if (gpuConfig.compositorResources)
+  app.commandLine.appendSwitch('enable-gpu-memory-buffer-compositor-resources')
 app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
 // only allow one instance to run for now
@@ -194,16 +202,40 @@ const manifestExists = async (dirPath) => {
   }
 }
 
-if (cfg.app.update.auto) {
-  kccp.logger.log(logSource, 'Checking for updates.')
-  updateElectronApp({
-    updateSource: {
-      type: UpdateSourceType.StaticStorage,
-      baseUrl: `https://tsunkit.net/damecon-browser/updates/${process.platform}/${process.arch}`,
-    },
-    updateInterval: '6 hours',
-    logger: { log: (msg) => kccp.logger.log('update-electron-app', msg) },
-  })
+if (isSquirrel) {
+  // clear old versions
+  if (configStore.get('app.update.removeOld')) {
+    kccp.logger.log(logSource, 'Removing previous versions.')
+    const entries = fsSync.readdirSync(appDir)
+    entries.forEach((entry) => {
+      const match = entry.match(/^app-(?<version>\d+\.\d+\.\d+)$/)
+      if (!match) return
+      const version = match.groups.version
+      if (version == app.getVersion()) return
+      const entryPath = path.join(appDir, entry)
+      const info = fsSync.statSync(entryPath)
+      if (info.isFile()) return
+      kccp.logger.log(logSource, 'Removing', entry)
+      try {
+        fsSync.rmdirSync(entryPath, { recursive: true })
+      } catch (error) {
+        kccp.logger.log(logSource, `Couldn't remove old version ${version}:`, error)
+      }
+    })
+  }
+
+  // auto update
+  if (cfg.app.update.auto) {
+    kccp.logger.log(logSource, 'Checking for updates.')
+    updateElectronApp({
+      updateSource: {
+        type: UpdateSourceType.StaticStorage,
+        baseUrl: `https://tsunkit.net/damecon-browser/updates/${process.platform}/${process.arch}`,
+      },
+      updateInterval: '6 hours',
+      logger: { log: (msg) => kccp.logger.log('update-electron-app', msg) },
+    })
+  }
 }
 
 const getParentWindowOfTab = (tab) => {
@@ -959,15 +991,15 @@ class Browser {
 
   createTabbedWindow(options) {
     //console.log('>> main.createWindow()')
-    const windowState = configStore.get('window.state')
+    const windowConfig = configStore.get('window')
 
     const win = new TabbedBrowserWindow({
       ...options,
       urls: this.urls,
       extensions: this.extensions,
       window: {
-        width: windowState?.width || configSchema.window.state.width.default,
-        height: windowState?.height || configSchema.window.state.height.default,
+        width: windowConfig.state?.width || configSchema.window.state.width.default,
+        height: windowConfig.state?.height || configSchema.window.state.height.default,
         frame: false,
         titleBarStyle: 'hidden',
         // remove the min/max/close buttons so we can theme them
@@ -983,6 +1015,7 @@ class Browser {
           enableRemoteModule: false,
           contextIsolation: true,
           worldSafeExecuteJavaScript: true,
+          backgroundThrottling: windowConfig.behavior.occlusion,
         },
         icon: path.join(__dirname, 'icon.ico'),
       },
@@ -1061,9 +1094,32 @@ class Browser {
     }
   }
 
+  getNumericVersion() {
+    // for version M.m.r
+    // give a simple numeric version MMmmrr
+    const version = app.getVersion().split('.').reverse()
+    let numeric = 0
+    for (let i = 0; i < version.length; i++) {
+      numeric += version[i] * Math.pow(10, i * 2)
+    }
+    return numeric
+  }
+
+  alwaysActiveUpdateJs = `
+    (function() {
+      Object.defineProperty(document, 'hidden', {
+        value: false,
+        configurable: false
+      });
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: false
+      });
+    }());`
+
   canvasUpdateJs = `
     (function() {
-      console.log("Injecting {preserveDrawingBuffer: true} into canvas getContext.", document?.URL)
+      console.log("Running canvas preserveDrawingBuffer injection.", document?.URL)
 
       // Set preserveDrawingBuffer to true, so we can save canvas as image :)
       // Source from https://github.com/greggman/webgl-helpers/blob/master/webgl-force-preservedrawingbuffer.js
@@ -1162,9 +1218,11 @@ class Browser {
         frameProcessId,
         frameRoutingId,
       ) => {
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)
+        frame.executeJavaScript(this.alwaysActiveUpdateJs)
+        // {preserveDrawingBuffer: true} for canvas getContext
         const skip = ['devtools:', 'about:']
         if (skip.some((s) => url.startsWith(s))) return
-        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)
         frame.executeJavaScript(this.canvasUpdateJs)
       },
     )

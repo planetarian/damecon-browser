@@ -2,6 +2,7 @@ const configSchema = {
   app: {
     update: {
       auto: { type: 'bool', default: true },
+      removeOld: { type: 'bool', default: true },
     },
     data: {
       location: {
@@ -37,6 +38,15 @@ const configSchema = {
       alwaysShowReload: { type: 'bool', default: true },
       alwaysShowBack: { type: 'bool', default: false },
       alwaysShowForward: { type: 'bool', default: false },
+    },
+    behavior: {
+      occlusion: { type: 'bool', default: false },
+    },
+    gpu: {
+      availableMemoryMb: { type: 'number', default: 10000 },
+      rasterization: { type: 'bool', default: true },
+      nativeBuffers: { type: 'bool', default: true },
+      compositorResources: { type: 'bool', default: true },
     },
   },
   kc3kai: {
