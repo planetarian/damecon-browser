@@ -264,6 +264,12 @@ class TabbedBrowserWindow {
     this.window = new BrowserWindow(options.window)
     this.id = this.window.id
     this.webContents = this.window.webContents
+    //this.webContents.setBackgroundThrottling(configStore.get('window.behavior.occlusion'))
+    kccp.logger.log(
+      logSource,
+      'Background throttling allowed:',
+      this.webContents.getBackgroundThrottling(),
+    )
 
     // load window chrome
     if (process.env.SHELL_DEBUG) {
@@ -1148,6 +1154,8 @@ class Browser {
     const browser = this
     const type = webContents.getType()
     const url = webContents.getURL()
+
+    webContents.setBackgroundThrottling(configStore.get('window.behavior.occlusion'))
 
     webContents.on('devtools-opened', (e) => {
       kccp.logger.log(logSource, 'DevTools opened')
