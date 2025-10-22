@@ -34,6 +34,8 @@ class KC3Updater {
     }
 
     const dir = path.join(extensionsPath, 'kc3kai-' + channel)
+    const langPath = 'src/data/lang'
+    const langDir = path.join(dir, langPath)
 
     console.log(`kc3updater.js: kc3 location ${dir} channel ${channel}`)
 
@@ -98,10 +100,10 @@ class KC3Updater {
           }
         }
       } else {
-        const updatePhases = 8
+        const updatePhases = 5
         let updatePhase = 0
         const updateProgress = () => {
-          updateProcess.progress({ phase: '', loaded: ++updatePhase, total: updatePhases })
+          updateProcess.progress({ phase: '', loaded: updatePhase++, total: updatePhases })
         }
         updateProgress()
 
@@ -113,109 +115,132 @@ class KC3Updater {
             fs,
             http,
             dir,
-            onProgress: kc3CloneProcess.progress.bind(kc3CloneProcess),
             url: 'https://github.com/kc3kai/kc3kai',
+            ref: channel,
+            onProgress: kc3CloneProcess.progress.bind(kc3CloneProcess)
           })
-          await git.checkout({ fs, http, dir, ref: 'develop' })
           kc3CloneProcess.complete()
         } else console.log('Updating existing repo...')
 
         updateProgress()
 
         console.log('Checking kc3-translations...')
-        const langPath = 'src/data/lang'
         let langOk = fs.existsSync(path.join(dir, langPath, '.git'))
-
-        updateProgress()
 
         // Get current commit
         let currentCommit = (await git.log({ fs, dir, depth: 1 }))[0]
         // Get current lang commit
         let currentLangCommit
         if (langOk)
-          currentLangCommit = (await git.log({ fs, dir, filepath: langPath, depth: 1 }))[0]
-
-        updateProgress()
-
-        // Fetch new commit info
-        console.log('Updating repo info...')
-        const kc3FetchProcess = self.newProcess('Checking for new commits')
-        let result = await git.fetch({
-          fs,
-          http,
-          dir,
-          onProgress: kc3FetchProcess.progress.bind(kc3FetchProcess),
-        })
-        kc3FetchProcess.complete()
-
-        updateProgress()
-
-        // Update branch list
-        console.log('Fetching branch list...')
-        let branches = await git.listBranches({ fs, dir, remote: 'origin' })
-
-        updateProgress()
+          currentLangCommit = (await git.log({ fs, dir: langDir, depth: 1 }))[0]
 
         // Get newest commit
-        let latestCommit = (await git.log({ fs, dir, depth: 1 }))[0]
-
-        if (currentCommit.oid != latestCommit.oid || !langOk) {
-          console.log('Pulling KC3Kai...')
-          // Pull from remote
-          const kc3PullProcess = self.newProcess('Pulling latest commits')
-          await git.fastForward({
-            fs,
-            http,
-            dir,
-            onProgress: kc3PullProcess.progress.bind(kc3PullProcess),
-            url: 'https://github.com/kc3kai/kc3kai',
+        let latestCommits = await git.listServerRefs({
+          http,
+          url: 'https://github.com/kc3kai/kc3kai',
+          prefix: `refs/heads/${channel}`
           })
-          kc3PullProcess.complete()
+        let latestCommit = latestCommits[0]
+
+        console.log(`current kc3: ${currentCommit.oid}`)
+        console.log(`latest kc3: ${latestCommit.oid}`)
+
+        updateProgress()
+
+        let IsKc3UpToDate = currentCommit.oid == latestCommit.oid
+
+        if (!IsKc3UpToDate || !langOk) {
+          if (!IsKc3UpToDate) {
+            // Fetch new commit info
+            console.log('Updating repo info...')
+            const kc3FetchProcess = self.newProcess('Checking for new commits')
+            await git.fetch({
+              fs,
+              http,
+              dir,
+              singleBranch: true,
+              ref: latestCommit.oid,
+              onProgress: kc3FetchProcess.progress.bind(kc3FetchProcess)
+            })
+            kc3FetchProcess.complete()
+
+            console.log('Pulling KC3Kai...')
+            // Pull from remote
+            const kc3PullProcess = self.newProcess('Pulling latest commits')
+            await git.checkout({
+              fs,
+              dir,
+              force: true,
+              ref: latestCommit.oid,
+              onProgress: kc3PullProcess.progress.bind(kc3PullProcess)
+            })
+            kc3PullProcess.complete()
+          }
 
           updateProgress()
 
           // Get the last commit involving lang submodule dir
           console.log('Checking kc3-translations location...')
-          let latestLangCommits = await git.log({
+          let latestSubmoduleCommits = await git.log({
             fs,
             dir,
             filepath: langPath,
-            depth: 1,
+            depth: 1
           })
+          let latestSubmoduleCommit = latestSubmoduleCommits[0]
 
-          updateProgress()
-
-          console.log(`Commits: ${latestLangCommits?.length}`)
-          let latestLangCommit = latestLangCommits[0]
+          let tree = await git.readTree({
+            fs,
+            dir,
+            oid: latestSubmoduleCommit.commit.tree,
+            filepath: 'src/data'
+          })
+          let latestLangCommit = tree.tree.find((t) => t.path === 'lang')
 
           console.log(`current lang: ${currentLangCommit?.oid ?? '[none]'}`)
           console.log(`latest lang: ${latestLangCommit.oid}`)
           console.log(`lang dir OK: ${langOk}`)
+
+          updateProgress()
+
           if (currentLangCommit?.oid != latestLangCommit.oid || !langOk) {
-            console.log('Locating kc3-translations commit...')
-            // get list of modified files
-            let tree = await git.readTree({
-              fs,
-              dir,
-              oid: latestLangCommit.commit.tree,
-              filepath: 'src/data',
-            })
-            let tlOid = tree.tree.find((t) => t.path === 'lang').oid
+            if (!langOk) {
+              console.log('Cloning kc3-translations...')
+              const tlPullProcess = self.newProcess('Cloning translation repo')
+              await git.clone({
+                fs,
+                http,
+                dir: langDir,
+                url: 'https://github.com/kc3kai/kc3-translations',
+                ref: latestLangCommit.oid,
+                onProgress: tlPullProcess.progress.bind(tlPullProcess)
+              })
+              tlPullProcess.complete()
+            } else {
+              // Fetch new commit info
+              const tlFetchProcess = self.newProcess('Fetching new translation commits')
+              await git.fetch({
+                fs,
+                http,
+                dir: langDir,
+                singleBranch: true,
+                ref: latestLangCommit.oid,
+                onProgress: tlFetchProcess.progress.bind(tlFetchProcess)
+              })
+              tlFetchProcess.complete()
 
-            const langDir = path.join(dir, langPath)
-            await fsAsync.rm(langDir, { recursive: true, force: true })
-
-            console.log('Pulling kc3-translations...')
-            const tlPullProcess = self.newProcess('Updating translation repo')
-            await git.clone({
-              fs,
-              http,
-              dir: langDir,
-              onProgress: tlPullProcess.progress.bind(tlPullProcess),
-              url: 'https://github.com/kc3kai/kc3-translations',
-              ref: tlOid,
-            })
-            tlPullProcess.complete()
+              console.log('Pulling kc3-translations...')
+              const tlPullProcess = self.newProcess('Updating translation repo')
+              await git.checkout({
+                fs,
+                dir: langDir,
+                force: true,
+                ref: latestLangCommit.oid,
+                onProgress: tlPullProcess.progress.bind(tlPullProcess)
+                })
+              tlPullProcess.complete()
+            }
+            updateProgress()
           } // pull lang
         } // pull kc3kai
       }
